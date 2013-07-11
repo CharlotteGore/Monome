@@ -182,6 +182,9 @@ NoteButton.prototype = {
 		}
 		var tweenA = require('tween').Tweening({ value: 0 }).to({ value: 1/count }).using('linear').duration(bpm * 1000).tick(cb);
 		var tweenB = require('tween').Tweening({ value: 1/count }).to({ value: 0 }).using('linear').duration(bpm * 500).tick(cb);
+
+		//var tweenA = require('tween').Tweening({ value: 0 }).to({ value: 1/count }).using('linear').duration(10).tick(cb);
+		//var tweenB = require('tween').Tweening({ value: 1/count }).to({ value: 0 }).using('linear').duration(10).tick(cb);
 		
 		setTimeout(function(){
 

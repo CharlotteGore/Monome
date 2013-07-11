@@ -7,21 +7,40 @@ ul.monome li.note {
 	background: '#000';
 	border: 1px solid #184a7d;
 	position: absolute;
-	border-radius: 3px;
+	border-radius: 5px;
+	margin-top: 0;
+	margin-left: 0;
+	-webkit-transition: background 1000ms, box-shadow 250ms, -webkit-transform 0ms;
+
+
+}
+
+ul.monome li.note:hover{
+	background:#3d77d7;
+	-webkit-transition: background 0ms
 }
 
 ul.monome li.note.on{
 	box-shadow: 0px 0px 5px #ff7c07;
-	background: #ff7c07;	
+	background: #ff7c07;
+	border: 1px solid #ff7c07;
+
+
+	
 }
 
 ul.monome li.note.sweep{
-	box-shadow: 0px 0px 5px #fff;
+	box-shadow: 0px 0px 20px #fff;
 	background: #fff;	
+	border: 1px solid #fff;
+	-webkit-transition: background 0ms
 }
 
 ul.monome li.note.sweep.on {
 
-	box-shadow: 0px 0px 5px #ffba7d;
-	background: #ffba7d;	
+	box-shadow: 0px 0px 20px #ffba7d;
+	background: #ffba7d;
+	border: 1px solid #ffba7d;
+	-webkit-transform:rotate(90deg);
+	-webkit-transition: -webkit-transform 700ms;
 }
