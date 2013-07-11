@@ -5,7 +5,7 @@ var tick = require('tick');
 var freqs = [1244.51, 1108.73, 932.33, 830.61, 740.00, 622.25, 554.37, 466.16, 415.30, 370.00, 311.13, 277.18, 233.08, 207.65, 185.00, 155.56, 138.59]
 
 var ctx = new webkitAudioContext();
-var bpm = 0.5;
+var bpm = 0.4;
 
 var osc = ctx.createOscillator();
 osc.connect(ctx.destination);
@@ -155,23 +155,37 @@ NoteButton.prototype = {
 		var gain = ctx.createGain();
 		osc.connect(gain);
 		gain.connect(mixer);
-		gain.gain.value = 0.05;
+		gain.gain.value = 0;
 		osc.frequency.value = this.freq;
-		osc.start(startTime);
-		osc.stop(startTime + bpm);
-		osc.type=osc.TRIANGLE;
+		osc.start(ctx.currentTime);
+		osc.stop(startTime + (bpm + 0.5) );
+		osc.type=osc.SINE;
 
+		var start = Math.floor(startTime - ctx.currentTime) * 1000;
+
+		
+
+		var cb = function(o){
+
+			gain.gain.value = o.value;
+
+		}
+		var tweenA = require('tween').Tweening({ value: 0 }).to({ value: 1/count }).using('ease-in-expo').duration(100).tick(cb);
+		var tweenB = require('tween').Tweening({ value: 1/count }).to({ value: 0 }).using('ease-out-expo').duration(100).tick(cb);
+		
 		setTimeout(function(){
 
-			gain.gain.value = 1/count;
+			tweenA.play();
 
-		},100)
-
+		}, Math.floor(startTime - ctx.currentTime) * 1000 );
+		
 		setTimeout(function(){
 
-			gain.gain.value = 0.1;
+			tweenB.play();
 
-		},450)
+		}, start + 500)
+
+		
 
 	}
 }
