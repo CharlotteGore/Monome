@@ -10,6 +10,10 @@ I also used my Tick library to form the basis of the sequencer's timings. To be 
 
 Added a few fancy CSS3 animations just to make it look a bit shiny and that's about it really. 
 
+## Demo
+
+[Link to live demo](http://charlottegore.com/monome)
+
 ## Installation
 
     $ component install charlottegore/monome
