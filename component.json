@@ -1,0 +1,18 @@
+{
+  "name": "monome",
+  "repo": "charlottegore/monome",
+  "description": "A Javascript/Web based Monome using the Web Audio API",
+  "version": "0.0.1",
+  "keywords": [],
+  "dependencies": {
+    "charlottegore/dollar": "*",
+    "charlottegore/measure": "*",
+    "component/event": "*",
+    "charlottegore/tick": "*"
+  },
+  "development": {},
+  "license": "MIT",
+  "scripts": [
+    "index.js"
+  ]
+}

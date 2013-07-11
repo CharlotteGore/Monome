@@ -1,0 +1,27 @@
+body { 
+	background: #072b4f;
+}
+
+ul.monome li { list-style:  none;}
+ul.monome li.note {		
+	background: '#000';
+	border: 1px solid #184a7d;
+	position: absolute;
+	border-radius: 3px;
+}
+
+ul.monome li.note.on{
+	box-shadow: 0px 0px 5px #ff7c07;
+	background: #ff7c07;	
+}
+
+ul.monome li.note.sweep{
+	box-shadow: 0px 0px 5px #fff;
+	background: #fff;	
+}
+
+ul.monome li.note.sweep.on {
+
+	box-shadow: 0px 0px 5px #ffba7d;
+	background: #ffba7d;	
+}
