@@ -22,9 +22,10 @@ Added a few fancy CSS3 animations just to make it look a bit shiny and that's ab
 
     $ component build
 
-## API
+## History
 
-   
+- 13th July 2013 - Refactored to use only 16 permanently running oscillators, with notes sounding via envelope filters rather than generating an oscillator every time a note sounds.
+- 12th July 2013 - Initial version
 
 ## License
 
