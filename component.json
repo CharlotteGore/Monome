@@ -10,7 +10,9 @@
     "component/event": "*",
     "charlottegore/tick": "*",
     "charlottegore/tween": "*",
-    "charlottegore/page-visibility": "*"
+    "charlottegore/page-visibility": "*",
+    "charlottegore/lzw" : "*",
+    "charlottegore/hashchange" : "*"
   },
   "development": {},
   "license": "MIT",

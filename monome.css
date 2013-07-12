@@ -1,5 +1,21 @@
+@font-face
+{
+	font-family: existence;
+	src: url('Existence-Light.otf');
+}
+
 body { 
 	background: #072b4f;
+	font-family: existence;
+	color: #19446e;
+}
+
+p.copy {
+	display:block;
+	margin: 0 auto;	
+	text-align: center;
+	text-shadow: 0px 0px 5px #19446e;
+	font-size:10px;
 }
 
 ul.monome li { list-style:  none;}
@@ -33,7 +49,7 @@ ul.monome li.note.sweep{
 	box-shadow: 0px 0px 20px #fff;
 	background: #fff;	
 	border: 1px solid #fff;
-	-webkit-transition: background 0ms
+	-webkit-transition: background 0ms;
 }
 
 ul.monome li.note.sweep.on {
