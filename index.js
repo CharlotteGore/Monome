@@ -226,9 +226,11 @@ var Voice = function( frequency ){
 
 	}
 
-	this.rampUp = require('tween').Tweening({ value: 0 }).to({ value: 1 }).using('ease-in').duration(100).tick(updateEnvelope);
-	this.rampDown = require('tween').Tweening({ value: 1 }).to({ value: 0 }).using('ease-out').duration(100).tick(updateEnvelope);
+	this.rampUp = require('tween').Tweening({ value: 0 }).to({ value: 1 }).using('ease-in').duration(250).tick(updateEnvelope);
+	this.rampDown = require('tween').Tweening({ value: 1 }).to({ value: 0 }).using('ease-out').duration(250).tick(updateEnvelope);
 
+	this.rampUpTimeout = -1;
+	this.rampDownTimeout = -1;
 
 	// start the oscillator
 	this.osc.start(ctx.currentTime);
@@ -241,7 +243,8 @@ var Voice = function( frequency ){
 Voice.prototype = {
 
 	play : function(startTime){
-
+		
+		clearTimeout(this.rampDownTimeout);
 		this.rampDown.stop();
 
 		this.osc.start(ctx.currentTime);
@@ -249,23 +252,17 @@ Voice.prototype = {
 		var self = this,
 			start = Math.floor(startTime - ctx.currentTime) * 1000;
 		
-		setTimeout(function(){
+		this.rampUpTimeout = setTimeout(function(){
 
 			self.rampUp.play();
 
 		}, start );
 		
-		setTimeout(function(){
+		this.rampDownTimeout = setTimeout(function(){
 
 			self.rampDown.play();
 
-		}, start + 390);
-
-		setTimeout(function(){
-
-			self.envelope.gain.value = 0;
-
-		}, start + 490)
+		}, start + 500);
 
 	},
 	gain : function( gain ){
@@ -280,6 +277,8 @@ Voice.prototype = {
 
 		this.rampUp.stop();
 		this.rampDown.stop();
+		clearTimeout(this.rampDownTimeout);
+		clearTimeout(this.rampUpTimeout);
 		this.envelope.gain.value = 0;
 
 	}
