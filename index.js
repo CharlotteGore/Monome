@@ -21,6 +21,7 @@ var Monome = function(){
 	var self = this;
 
 	this.rows = [];
+	this.voices = [];
 
 	window.rows = this.rows;
 
@@ -35,8 +36,13 @@ var Monome = function(){
 	($().getBody()).append( this.container ) ;
 
 	for(var i = 0; i < 16; i++){
+
+		// create an array of rows to hold our columns
 		var arr = [];
 		this.rows.push(arr);
+
+		// create a new voice, while we're in a 0-15 loop. 
+		this.voices.push(new Voice(freqs[i + 2]))
 
 		var ul = $().create('ul');
 
@@ -44,7 +50,7 @@ var Monome = function(){
 
 		for(var j = 0; j < 16; j++){
 
-			var button = new NoteButton(cubeSize, i, j, freqs[j + 2], function(){
+			var button = new NoteButton(cubeSize, i, j, function(){
 
 				self.updateCode();
 
@@ -84,8 +90,6 @@ var Monome = function(){
 
 	});
 
-	
-
 	tick.add(function(elapsed, stop){
 		var currentTime = ctx.currentTime;		
 		if(currentTime > nextTime){
@@ -113,7 +117,7 @@ var Monome = function(){
 			for(var i = 0; i < 16; i++){
 
 				if(self.rows[index % 16][i].on === true){
-					self.rows[index % 16][i].play(nextTime + 0.1, notesOn);					
+					self.voices[i].gain( 1/ notesOn).play(nextTime + 0.1)				
 				}				
 			}
 
@@ -127,8 +131,6 @@ var Monome = function(){
 	hashChange.update(function(frag){
 
 		var str = lzw.decompressFromBase64(frag.match(/song\=([A-Za-z0-9+\/\=]+)/)[1]);
-
-		console.log(str);
 
 		for(var i = 0; i < 16; i++){
 
@@ -184,17 +186,98 @@ Monome.prototype = {
 	}
 }
 
-var ButtonRow = function(){
+var Voice = function( frequency ){
 
+	var self = this;
+
+	// create our notes
+	this.filter = ctx.createBiquadFilter(); // low pass filter for getting rid of errant harmonics.
+	this.masterVolume = ctx.createGain(); // master volume is set based on the number of sounds to be played this step
+	this.envelope = ctx.createGain(); // envelope filter for playing notes
+	this.osc = ctx.createOscillator(); // our oscillator. Probably shouldn't be making lots of these.
+
+	// route the web audio notes
+	this.masterVolume.connect(mixer);
+	this.filter.connect(this.masterVolume);
+	this.envelope.connect(this.filter);
+	this.osc.connect(this.envelope);
+
+	// configure the notes
+	this.masterVolume.gain.value = 0;
+	this.envelope.gain.value = 0;
+
+	this.filter.type = 3;
+	this.filter.frequency.value = 3000;
+	this.filter.Q.value = 1;
+
+	
+	this.osc.type=osc.SINE;
+	this.osc.frequency.value = frequency;
+
+	var updateEnvelope = function(o){
+
+		self.envelope.gain.value = o.value;
+
+	}
+
+	this.rampUp = require('tween').Tweening({ value: 0 }).to({ value: 1 }).using('ease-in').duration(100).tick(updateEnvelope);
+	this.rampDown = require('tween').Tweening({ value: 1 }).to({ value: 0 }).using('ease-out').duration(100).tick(updateEnvelope);
+
+
+	// start the oscillator
+	this.osc.start(ctx.currentTime);
+
+	return this;
 
 
 }
 
-var NoteButton = function(cubeSize, i, j, freq, onUpdate){
+Voice.prototype = {
+
+	play : function(startTime){
+
+		this.rampDown.stop();
+
+		this.osc.start(ctx.currentTime);
+
+		var self = this,
+			start = Math.floor(startTime - ctx.currentTime) * 1000;
+		
+		setTimeout(function(){
+
+			self.rampUp.play();
+
+		}, start );
+		
+		setTimeout(function(){
+
+			self.rampDown.play();
+
+		}, start + 390);
+
+		setTimeout(function(){
+
+			self.envelope.gain.value = 0;
+
+		}, start + 490)
+
+	},
+	gain : function( gain ){
+
+		this.masterVolume.gain.value = gain;
+
+		this.osc.start(ctx.currentTime);
+		return this;
+
+	}
+
+
+}
+
+var NoteButton = function(cubeSize, i, j, onUpdate){
 
 	var self = this;
 	this.on = false;
-	this.freq = freq;
 
 	this.element = ($().create('li')).addClass('note');
 
@@ -211,7 +294,7 @@ var NoteButton = function(cubeSize, i, j, freq, onUpdate){
 		self.on = !self.on;
 		onUpdate();
 
-	})
+	});
 
 	return this;
 
@@ -221,58 +304,6 @@ NoteButton.prototype = {
 	getElement : function(){
 
 		return this.element;
-
-	},
-	play : function( startTime, count){
-
-		var osc = ctx.createOscillator();
-		var gain = ctx.createGain();
-		var filter = ctx.createBiquadFilter();
-
-		filter.type = 3;
-		filter.frequency.value = 5000;
-		filter.Q.value = 0.5;
-		filter.gain.value = 0
-
-		filter.connect(gain);
-
-		osc.connect(filter);
-		gain.connect(mixer);
-		gain.gain.value = 0;
-		osc.frequency.value = this.freq;
-		osc.start(ctx.currentTime);
-		osc.stop(startTime + (bpm + 0.5) );
-		osc.type=osc.SINE;
-
-
-		var start = Math.floor(startTime - ctx.currentTime) * 1000;
-
-		
-
-		var cb = function(o){
-
-			gain.gain.value = o.value;
-
-		}
-		var tweenA = require('tween').Tweening({ value: 0 }).to({ value: 1/count }).using('linear').duration(bpm * 1000).tick(cb);
-		var tweenB = require('tween').Tweening({ value: 1/count }).to({ value: 0 }).using('linear').duration(bpm * 500).tick(cb);
-
-		//var tweenA = require('tween').Tweening({ value: 0 }).to({ value: 1/count }).using('linear').duration(10).tick(cb);
-		//var tweenB = require('tween').Tweening({ value: 1/count }).to({ value: 0 }).using('linear').duration(10).tick(cb);
-		
-		setTimeout(function(){
-
-			tweenA.play();
-
-		}, Math.floor(startTime - ctx.currentTime) * 1000 );
-		
-		setTimeout(function(){
-
-			tweenB.play();
-
-		}, start + 500)
-
-		
 
 	}
 }
