@@ -81,6 +81,12 @@ var Monome = function(){
 
 		tick.pause();
 
+		self.voices.forEach(function(voice){
+
+			voice.stop();
+
+		})
+
 	});
 
 	pageVis.onVisible(function(){
@@ -268,6 +274,13 @@ Voice.prototype = {
 
 		this.osc.start(ctx.currentTime);
 		return this;
+
+	},
+	stop : function(){
+
+		this.rampUp.stop();
+		this.rampDown.stop();
+		this.envelope.gain.value = 0;
 
 	}
 
