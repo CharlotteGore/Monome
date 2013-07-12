@@ -9,7 +9,8 @@
     "charlottegore/measure": "*",
     "component/event": "*",
     "charlottegore/tick": "*",
-    "charlottegore/tween": "*"
+    "charlottegore/tween": "*",
+    "charlottegore/page-visibility": "*"
   },
   "development": {},
   "license": "MIT",

@@ -1,6 +1,7 @@
 window.$ = require('dollar');
 window.measure = require('measure');
 var tick = require('tick');
+var pageVis = require('page-visibility');
 
 var freqs = [1244.51, 1108.73, 932.33, 830.61, 740.00, 622.25, 554.37, 466.16, 415.30, 370.00, 311.13, 277.18, 233.08, 207.65, 185.00, 155.56, 138.59, 116.54, 103.83, 92.50]
 
@@ -61,6 +62,19 @@ var Monome = function(){
 	var currentCol = 15;
 
 	var nextTime = ctx.currentTime + bpm;
+
+	pageVis.onHidden(function(){
+
+		tick.pause();
+
+	});
+
+	pageVis.onVisible(function(){
+
+		nextTime = ctx.currentTime + bpm;
+		tick.resume();
+
+	})
 
 	
 
