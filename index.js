@@ -6,15 +6,17 @@ module.exports = function(){
 			ref = ctx.createOscillator(),
 			waveform = require("voice").SINE,
 			mixerA = ctx.createChannelMerger(16),
-			mixerB = ctx.createChannelMerger(16);
+			mixerB = ctx.createChannelMerger(16),
+			pageVis = require("page-visibility"),
+			tick = require('tick');
  
 		var gainA = ctx.createGain();
 		var gainB = ctx.createGain();
 
 		var hashchange = require('hashchange');
 
-		gainA.gain.value = 0.7//Math.cos(0.5 * 0.5* Math.PI);
-  		gainB.gain.value = 1.3//Math.cos((1.0 - 0.5) * 0.5* Math.PI);
+		gainA.gain.value = 1//Math.cos(0.5 * 0.5* Math.PI);
+  		gainB.gain.value = 1//Math.cos((1.0 - 0.5) * 0.5* Math.PI);
 
   		ref.connect(ctx.destination);
 		mixerA.connect(gainA);
@@ -88,13 +90,13 @@ module.exports = function(){
 		}
 
 
-		var monomeA = require('monome-synth').Monome(ctx, mixerA, bpm).glide().updateCode(function(code){
+		var monomeA = require('monome-synth').Monome(ctx, mixerA, bpm, tick).glide().updateCode(function(code){
 
 			codeA = code;
 			hashchange.updateHash('#!song=' + codeA + ":" + codeB);
 
 		});
-		var monomeB = require('monome-synth').Monome(ctx, mixerB, bpm * 4).waveform(ref.SQUARE).glide().updateCode(function(code){
+		var monomeB = require('monome-synth').Monome(ctx, mixerB, bpm * 4, tick).waveform(ref.SAWTOOTH).updateCode(function(code){
 
 			codeB = code;
 			hashchange.updateHash('!song=' + codeA + ":" + codeB);
@@ -153,5 +155,22 @@ module.exports = function(){
 			}
 
 		}).update();
+
+	pageVis.onHidden(function(){
+
+		tick.pause();
+
+		monomeA.stop();
+		monomeB.stop();
+
+	});
+
+	pageVis.onVisible(function(){
+
+		tick.resume();
+		monomeA.resume();
+		monomeB.resume();
+
+	});
 
 }

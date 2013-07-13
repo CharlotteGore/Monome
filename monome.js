@@ -643,6 +643,277 @@ hashChange = new HashChange();
 module.exports = hashChange;
 
 });
+require.register("component-raf/index.js", function(exports, require, module){
+
+module.exports = window.requestAnimationFrame
+  || window.webkitRequestAnimationFrame
+  || window.mozRequestAnimationFrame
+  || window.oRequestAnimationFrame
+  || window.msRequestAnimationFrame
+  || fallback;
+
+var prev = new Date().getTime();
+function fallback(fn) {
+  var curr = new Date().getTime();
+  var ms = Math.max(0, 16 - (curr - prev));
+  setTimeout(fn, ms);
+  prev = curr;
+}
+
+});
+require.register("charlottegore-tick/index.js", function(exports, require, module){
+var raf = require('raf'),
+	time = Date.now || function(){ return (new Date()).getTime(); },
+	start = time(),
+	now;
+
+// normalise the time functionality
+if(window.performance && window.performance.now){
+
+	now = function(){ return performance.now() };
+	start = performance.timing.navigationStart;
+
+} else {
+	now = function(){ return time() - start; }
+}
+
+var callbacks = {};
+var uuid = 0;
+
+var runCallbacks = function( timestamp ){
+
+	var self = this;
+	for(i in callbacks){
+		if(callbacks.hasOwnProperty(i)){
+			callbacks[i].update( timestamp );
+		}
+	}
+	return true;
+};
+
+var Tick = function(){
+
+	var self = this;
+
+	var tick;
+
+	raf(function( elapsed ){
+
+		if(window.performance && window.performance.now){
+
+			if(elapsed && /\./.test(elapsed.toString())){
+				// requestAnimationFrame returns sexy sub-millisecond elapsed time
+				tick = function tick( timestamp ){
+					runCallbacks.call( self, timestamp );
+					raf(tick);
+				} 
+
+ 			} else {
+ 				// requestAnimationFrame returns a lame unix timestamp. At least we've got performance.now() though.
+ 				tick = function tick(){
+ 					runCallbacks.call( self, performance.now() );
+ 					raf(tick);
+ 				}
+ 			}
+
+		} else {
+
+			tick = function tick(){
+				runCallbacks.call( self, now() )
+				raf(tick);
+			}
+
+		}
+
+		// go go go!
+		raf(tick);
+
+	})
+
+	return this;
+
+};
+
+Tick.prototype = {
+
+	add : (function( task ){
+
+		var create = function(callback, start, stop){
+
+			var paused = false;
+			var pausedAt;
+
+			return {
+				update : function( now ){
+					if(!paused){
+					callback( now - start, stop);
+					}					
+				},
+				pause : function(){
+					paused = true;
+					pausedAt = now();
+				},
+				resume : function(){
+					start = start + now() - pausedAt;
+					paused = false; 
+				},
+				stop : stop
+			}
+				
+		};
+
+		return function( callback ){
+
+			var id = ++uuid;
+			var stop = function(){
+				delete(callbacks[id]);				
+			}
+			callbacks[id] = create( callback, now(), stop);
+			return {
+				id : id,
+				stop : stop,
+				pause : callbacks[id].pause,
+				resume : callbacks[id].resume
+			}
+		}
+
+	})(),
+
+	now : function(){
+
+		return now();
+
+	},
+
+	pause : function(){
+
+		for(i in callbacks){
+			if(callbacks.hasOwnProperty(i)){
+				callbacks[i].pause();
+			}
+		}
+
+	},
+
+	resume : function(){
+		for(i in callbacks){
+			if(callbacks.hasOwnProperty(i)){
+				callbacks[i].resume();
+			}
+		}
+	},
+
+	stop : function(){
+		for(i in callbacks){
+			if(callbacks.hasOwnProperty(i)){
+				callbacks[i].stop();
+			}
+		}
+	}
+
+};
+
+var tick = new Tick();
+
+module.exports = tick;
+});
+require.register("charlottegore-page-visibility/index.js", function(exports, require, module){
+var PageVisibility = function(){
+
+    var body = document.body,
+        self = this,
+        hidden = "hidden";
+
+    this.callbacks = {
+        visible : [],
+        hidden : []
+    }
+
+    var onChange= function(){
+
+        document[hidden] ? self.isHidden() : self.isVisible();
+    }
+
+    var listen = function(prefix){
+        document.addEventListener(prefix + 'visibilitychange', onChange);
+    }
+
+    var test = function( prop ){
+
+        if(prop in document){
+
+            hidden = prop;
+            return true;
+
+        } else {
+
+            return false;
+
+        }
+
+    }
+
+    if( test("hidden") ){
+        listen('');
+    } else if( test("mozHidden") ){
+        listen('moz');
+    } else if( test("webkitHidden") ){
+        listen('webkit');
+    } else if( test("msHidden") ){
+        listen('ms');
+    } else if( 'onfocusin' in document ){
+        document.onfocusin = function(){ self.isVisible(); };
+        document.onfocusout = function(){ self.isHidden(); };
+    } else {
+        window.onfocus = function(){ self.isVisible(); };
+        window.onblur = function(){ self.isHidden(); };
+    }
+
+}
+
+PageVisibility.prototype = {
+
+    isVisible : function(){
+
+        var i = 0,
+            length = this.callbacks.visible.length;
+
+        while(i < length && this.callbacks.visible[i++]() !== false);
+
+        return this;
+    },
+
+    isHidden : function(){
+
+        var i = 0,
+            length = this.callbacks.hidden.length;
+            
+        while(i < length && this.callbacks.hidden[i++]() !== false);
+
+        return this;
+
+    },
+
+    onVisible : function( callback ){
+
+        this.callbacks.visible.push( callback );
+        return this;
+
+    },
+
+    onHidden : function( callback ){
+
+        this.callbacks.hidden.push( callback );
+        return this;
+
+    }
+
+}
+
+pageVis = new PageVisibility();
+
+module.exports = pageVis;
+});
 require.register("component-classes/index.js", function(exports, require, module){
 
 /**
@@ -1066,277 +1337,6 @@ module.exports = function(element){
 
 }
 
-});
-require.register("component-raf/index.js", function(exports, require, module){
-
-module.exports = window.requestAnimationFrame
-  || window.webkitRequestAnimationFrame
-  || window.mozRequestAnimationFrame
-  || window.oRequestAnimationFrame
-  || window.msRequestAnimationFrame
-  || fallback;
-
-var prev = new Date().getTime();
-function fallback(fn) {
-  var curr = new Date().getTime();
-  var ms = Math.max(0, 16 - (curr - prev));
-  setTimeout(fn, ms);
-  prev = curr;
-}
-
-});
-require.register("charlottegore-tick/index.js", function(exports, require, module){
-var raf = require('raf'),
-	time = Date.now || function(){ return (new Date()).getTime(); },
-	start = time(),
-	now;
-
-// normalise the time functionality
-if(window.performance && window.performance.now){
-
-	now = function(){ return performance.now() };
-	start = performance.timing.navigationStart;
-
-} else {
-	now = function(){ return time() - start; }
-}
-
-var callbacks = {};
-var uuid = 0;
-
-var runCallbacks = function( timestamp ){
-
-	var self = this;
-	for(i in callbacks){
-		if(callbacks.hasOwnProperty(i)){
-			callbacks[i].update( timestamp );
-		}
-	}
-	return true;
-};
-
-var Tick = function(){
-
-	var self = this;
-
-	var tick;
-
-	raf(function( elapsed ){
-
-		if(window.performance && window.performance.now){
-
-			if(elapsed && /\./.test(elapsed.toString())){
-				// requestAnimationFrame returns sexy sub-millisecond elapsed time
-				tick = function tick( timestamp ){
-					runCallbacks.call( self, timestamp );
-					raf(tick);
-				} 
-
- 			} else {
- 				// requestAnimationFrame returns a lame unix timestamp. At least we've got performance.now() though.
- 				tick = function tick(){
- 					runCallbacks.call( self, performance.now() );
- 					raf(tick);
- 				}
- 			}
-
-		} else {
-
-			tick = function tick(){
-				runCallbacks.call( self, now() )
-				raf(tick);
-			}
-
-		}
-
-		// go go go!
-		raf(tick);
-
-	})
-
-	return this;
-
-};
-
-Tick.prototype = {
-
-	add : (function( task ){
-
-		var create = function(callback, start, stop){
-
-			var paused = false;
-			var pausedAt;
-
-			return {
-				update : function( now ){
-					if(!paused){
-					callback( now - start, stop);
-					}					
-				},
-				pause : function(){
-					paused = true;
-					pausedAt = now();
-				},
-				resume : function(){
-					start = start + now() - pausedAt;
-					paused = false; 
-				},
-				stop : stop
-			}
-				
-		};
-
-		return function( callback ){
-
-			var id = ++uuid;
-			var stop = function(){
-				delete(callbacks[id]);				
-			}
-			callbacks[id] = create( callback, now(), stop);
-			return {
-				id : id,
-				stop : stop,
-				pause : callbacks[id].pause,
-				resume : callbacks[id].resume
-			}
-		}
-
-	})(),
-
-	now : function(){
-
-		return now();
-
-	},
-
-	pause : function(){
-
-		for(i in callbacks){
-			if(callbacks.hasOwnProperty(i)){
-				callbacks[i].pause();
-			}
-		}
-
-	},
-
-	resume : function(){
-		for(i in callbacks){
-			if(callbacks.hasOwnProperty(i)){
-				callbacks[i].resume();
-			}
-		}
-	},
-
-	stop : function(){
-		for(i in callbacks){
-			if(callbacks.hasOwnProperty(i)){
-				callbacks[i].stop();
-			}
-		}
-	}
-
-};
-
-var tick = new Tick();
-
-module.exports = tick;
-});
-require.register("charlottegore-page-visibility/index.js", function(exports, require, module){
-var PageVisibility = function(){
-
-    var body = document.body,
-        self = this,
-        hidden = "hidden";
-
-    this.callbacks = {
-        visible : [],
-        hidden : []
-    }
-
-    var onChange= function(){
-
-        document[hidden] ? self.isHidden() : self.isVisible();
-    }
-
-    var listen = function(prefix){
-        document.addEventListener(prefix + 'visibilitychange', onChange);
-    }
-
-    var test = function( prop ){
-
-        if(prop in document){
-
-            hidden = prop;
-            return true;
-
-        } else {
-
-            return false;
-
-        }
-
-    }
-
-    if( test("hidden") ){
-        listen('');
-    } else if( test("mozHidden") ){
-        listen('moz');
-    } else if( test("webkitHidden") ){
-        listen('webkit');
-    } else if( test("msHidden") ){
-        listen('ms');
-    } else if( 'onfocusin' in document ){
-        document.onfocusin = function(){ self.isVisible(); };
-        document.onfocusout = function(){ self.isHidden(); };
-    } else {
-        window.onfocus = function(){ self.isVisible(); };
-        window.onblur = function(){ self.isHidden(); };
-    }
-
-}
-
-PageVisibility.prototype = {
-
-    isVisible : function(){
-
-        var i = 0,
-            length = this.callbacks.visible.length;
-
-        while(i < length && this.callbacks.visible[i++]() !== false);
-
-        return this;
-    },
-
-    isHidden : function(){
-
-        var i = 0,
-            length = this.callbacks.hidden.length;
-            
-        while(i < length && this.callbacks.hidden[i++]() !== false);
-
-        return this;
-
-    },
-
-    onVisible : function( callback ){
-
-        this.callbacks.visible.push( callback );
-        return this;
-
-    },
-
-    onHidden : function( callback ){
-
-        this.callbacks.hidden.push( callback );
-        return this;
-
-    }
-
-}
-
-pageVis = new PageVisibility();
-
-module.exports = pageVis;
 });
 require.register("charlottegore-lzw/index.js", function(exports, require, module){
 // Copyright (c) 2013 Pieroxy <pieroxy@pieroxy.net>
@@ -2069,8 +2069,6 @@ require.register("monome-synth/index.js", function(exports, require, module){
 window.$ = require('dollar');
 
 var measure = require('measure'),
-	tick = require('tick'),
-	pageVis = require('page-visibility'),
 	lzw = require('lzw'),
 	events = require('event'),
 	noteButton = require("notebutton").NoteButton,
@@ -2083,13 +2081,15 @@ var measure = require('measure'),
 	waveform = require("voice").SINE,
 	mixer;
 
-var Monome = function( webkitAudioContext, mixer, bpm ){
+var Monome = function( webkitAudioContext, mixer, bpm, tick ){
 
 	var self = this;
 
 	ctx = webkitAudioContext;
 	mixer = mixer;
 	bpm = bpm;
+
+	this.bpm = bpm;
 
 	this.rows = [];
 	this.voices = [];
@@ -2144,32 +2144,15 @@ var Monome = function( webkitAudioContext, mixer, bpm ){
 
 
 
-	var nextTime = ctx.currentTime + bpm;
+	this.nextTime = ctx.currentTime + bpm;
 
-	pageVis.onHidden(function(){
-
-		tick.pause();
-
-		self.voices.forEach(function(voice){
-
-			voice.stop();
-
-		})
-
-	});
-
-	pageVis.onVisible(function(){
-
-		nextTime = ctx.currentTime + bpm;
-		tick.resume();
-
-	});
 
 	tick.add(function(elapsed, stop){
-		var currentTime = ctx.currentTime;		
-		if(currentTime > nextTime){
 
-			var trigger = nextTime - currentTime + 0.1;
+		var currentTime = ctx.currentTime;		
+		if(currentTime > self.nextTime){
+
+			var trigger = self.nextTime - currentTime + 0.1;
 
 			for(var i = 0; i < 16; i++){
 
@@ -2192,7 +2175,7 @@ var Monome = function( webkitAudioContext, mixer, bpm ){
 			for(var i = 0; i < 16; i++){
 
 				if(self.rows[index % 16][i].on === true){
-					self.voices[i].gain( Math.cos((1 - (1 / (notesOn ))) * (1 / (notesOn )) * Math.PI) * 0.15 ).play(nextTime + 0.1);	
+					self.voices[i].gain( Math.cos((1 - (1 / (notesOn ))) * (1 / (notesOn )) * Math.PI) * 0.15 ).play(self.nextTime + 0.1);	
 					self.rows[index % 16][i].removeClass('queued');				
 				}	
 
@@ -2203,7 +2186,7 @@ var Monome = function( webkitAudioContext, mixer, bpm ){
 
 			}
 
-			nextTime = nextTime + bpm;
+			self.nextTime = self.nextTime + bpm;
 
 		}
 
@@ -2316,14 +2299,50 @@ Monome.prototype = {
 		}
 		return this;
 
+	},
+	stop : function(){
+
+		this.voices.forEach(function(voice){
+
+			voice.stop();
+
+		});
+
+		return this;
+	},
+	resume : function(){
+
+		this.nextTime = ctx.currentTime + this.bpm;
+		return this;
+
 	}
 }
 
-module.exports.Monome = function( webkitAudioContext, mixer, bpm ){
+module.exports.Monome = function( webkitAudioContext, mixer, bpm, tick ){
 
-	return new Monome( webkitAudioContext, mixer, bpm );
+	return new Monome( webkitAudioContext, mixer, bpm, tick);
 
 }
+
+
+/*
+	pageVis.onHidden(function(){
+
+		tick.pause();
+
+		monomeA.stop();
+
+
+
+	});
+
+	pageVis.onVisible(function(){
+
+		nextTime = ctx.currentTime + bpm;
+		tick.resume();
+
+	});
+*/
 });
 require.register("charlottegore-easing/index.js", function(exports, require, module){
 var Bezier = require('bezier');
@@ -3317,7 +3336,9 @@ Voice.prototype = {
 		this.rampUpTimeout = setTimeout(function(){
 
 			self.rampUp.play();
-			self.glide.play();
+			if(this.glide){
+				self.glide.play();
+			}
 
 		}, start );
 
@@ -3334,16 +3355,19 @@ Voice.prototype = {
 
 		this.masterVolume.gain.value = gain;
 
-		this.osc.start(ctx.currentTime);
 		return this;
 
 	},
 	stop : function(){
 
-		this.rampUp.stop();
-		this.rampDown.stop();
-		clearTimeout(this.rampDownTimeout);
-		clearTimeout(this.rampUpTimeout);
+		if(this.rampUp && this.rampDown){
+
+			this.rampUp.stop();
+			this.rampDown.stop();
+			clearTimeout(this.rampDownTimeout);
+			clearTimeout(this.rampUpTimeout);
+
+		}
 		this.envelope.gain.value = 0;
 
 		this.rampUpTimeout = -1;
@@ -3410,15 +3434,17 @@ module.exports = function(){
 			ref = ctx.createOscillator(),
 			waveform = require("voice").SINE,
 			mixerA = ctx.createChannelMerger(16),
-			mixerB = ctx.createChannelMerger(16);
+			mixerB = ctx.createChannelMerger(16),
+			pageVis = require("page-visibility"),
+			tick = require('tick');
  
 		var gainA = ctx.createGain();
 		var gainB = ctx.createGain();
 
 		var hashchange = require('hashchange');
 
-		gainA.gain.value = 0.7//Math.cos(0.5 * 0.5* Math.PI);
-  		gainB.gain.value = 1.3//Math.cos((1.0 - 0.5) * 0.5* Math.PI);
+		gainA.gain.value = 1//Math.cos(0.5 * 0.5* Math.PI);
+  		gainB.gain.value = 1//Math.cos((1.0 - 0.5) * 0.5* Math.PI);
 
   		ref.connect(ctx.destination);
 		mixerA.connect(gainA);
@@ -3492,13 +3518,13 @@ module.exports = function(){
 		}
 
 
-		var monomeA = require('monome-synth').Monome(ctx, mixerA, bpm).glide().updateCode(function(code){
+		var monomeA = require('monome-synth').Monome(ctx, mixerA, bpm, tick).glide().updateCode(function(code){
 
 			codeA = code;
 			hashchange.updateHash('#!song=' + codeA + ":" + codeB);
 
 		});
-		var monomeB = require('monome-synth').Monome(ctx, mixerB, bpm * 4).waveform(ref.SQUARE).glide().updateCode(function(code){
+		var monomeB = require('monome-synth').Monome(ctx, mixerB, bpm * 4, tick).waveform(ref.SAWTOOTH).updateCode(function(code){
 
 			codeB = code;
 			hashchange.updateHash('!song=' + codeA + ":" + codeB);
@@ -3558,6 +3584,23 @@ module.exports = function(){
 
 		}).update();
 
+	pageVis.onHidden(function(){
+
+		tick.pause();
+
+		monomeA.stop();
+		monomeB.stop();
+
+	});
+
+	pageVis.onVisible(function(){
+
+		tick.resume();
+		monomeA.resume();
+		monomeB.resume();
+
+	});
+
 }
 
 });
@@ -3569,6 +3612,11 @@ require.alias("charlottegore-hashchange/index.js", "monome/deps/hashchange/index
 require.alias("manuelstofer-each/index.js", "charlottegore-hashchange/deps/each/index.js");
 
 require.alias("component-indexof/index.js", "charlottegore-hashchange/deps/indexof/index.js");
+
+require.alias("charlottegore-tick/index.js", "monome/deps/tick/index.js");
+require.alias("component-raf/index.js", "charlottegore-tick/deps/raf/index.js");
+
+require.alias("charlottegore-page-visibility/index.js", "monome/deps/page-visibility/index.js");
 
 require.alias("monome-synth/index.js", "monome/deps/monome-synth/index.js");
 require.alias("charlottegore-dollar/index.js", "monome-synth/deps/dollar/index.js");
@@ -3583,17 +3631,7 @@ require.alias("charlottegore-measure/index.js", "monome-synth/deps/measure/index
 
 require.alias("component-event/index.js", "monome-synth/deps/event/index.js");
 
-require.alias("charlottegore-tick/index.js", "monome-synth/deps/tick/index.js");
-require.alias("component-raf/index.js", "charlottegore-tick/deps/raf/index.js");
-
-require.alias("charlottegore-page-visibility/index.js", "monome-synth/deps/page-visibility/index.js");
-
 require.alias("charlottegore-lzw/index.js", "monome-synth/deps/lzw/index.js");
-
-require.alias("charlottegore-hashchange/index.js", "monome-synth/deps/hashchange/index.js");
-require.alias("manuelstofer-each/index.js", "charlottegore-hashchange/deps/each/index.js");
-
-require.alias("component-indexof/index.js", "charlottegore-hashchange/deps/indexof/index.js");
 
 require.alias("notebutton/index.js", "monome-synth/deps/notebutton/index.js");
 require.alias("charlottegore-dollar/index.js", "notebutton/deps/dollar/index.js");

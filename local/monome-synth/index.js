@@ -1,8 +1,6 @@
 window.$ = require('dollar');
 
 var measure = require('measure'),
-	tick = require('tick'),
-	pageVis = require('page-visibility'),
 	lzw = require('lzw'),
 	events = require('event'),
 	noteButton = require("notebutton").NoteButton,
@@ -15,13 +13,15 @@ var measure = require('measure'),
 	waveform = require("voice").SINE,
 	mixer;
 
-var Monome = function( webkitAudioContext, mixer, bpm ){
+var Monome = function( webkitAudioContext, mixer, bpm, tick ){
 
 	var self = this;
 
 	ctx = webkitAudioContext;
 	mixer = mixer;
 	bpm = bpm;
+
+	this.bpm = bpm;
 
 	this.rows = [];
 	this.voices = [];
@@ -76,32 +76,15 @@ var Monome = function( webkitAudioContext, mixer, bpm ){
 
 
 
-	var nextTime = ctx.currentTime + bpm;
+	this.nextTime = ctx.currentTime + bpm;
 
-	pageVis.onHidden(function(){
-
-		tick.pause();
-
-		self.voices.forEach(function(voice){
-
-			voice.stop();
-
-		})
-
-	});
-
-	pageVis.onVisible(function(){
-
-		nextTime = ctx.currentTime + bpm;
-		tick.resume();
-
-	});
 
 	tick.add(function(elapsed, stop){
-		var currentTime = ctx.currentTime;		
-		if(currentTime > nextTime){
 
-			var trigger = nextTime - currentTime + 0.1;
+		var currentTime = ctx.currentTime;		
+		if(currentTime > self.nextTime){
+
+			var trigger = self.nextTime - currentTime + 0.1;
 
 			for(var i = 0; i < 16; i++){
 
@@ -124,7 +107,7 @@ var Monome = function( webkitAudioContext, mixer, bpm ){
 			for(var i = 0; i < 16; i++){
 
 				if(self.rows[index % 16][i].on === true){
-					self.voices[i].gain( Math.cos((1 - (1 / (notesOn ))) * (1 / (notesOn )) * Math.PI) * 0.15 ).play(nextTime + 0.1);	
+					self.voices[i].gain( Math.cos((1 - (1 / (notesOn ))) * (1 / (notesOn )) * Math.PI) * 0.15 ).play(self.nextTime + 0.1);	
 					self.rows[index % 16][i].removeClass('queued');				
 				}	
 
@@ -135,7 +118,7 @@ var Monome = function( webkitAudioContext, mixer, bpm ){
 
 			}
 
-			nextTime = nextTime + bpm;
+			self.nextTime = self.nextTime + bpm;
 
 		}
 
@@ -248,11 +231,47 @@ Monome.prototype = {
 		}
 		return this;
 
+	},
+	stop : function(){
+
+		this.voices.forEach(function(voice){
+
+			voice.stop();
+
+		});
+
+		return this;
+	},
+	resume : function(){
+
+		this.nextTime = ctx.currentTime + this.bpm;
+		return this;
+
 	}
 }
 
-module.exports.Monome = function( webkitAudioContext, mixer, bpm ){
+module.exports.Monome = function( webkitAudioContext, mixer, bpm, tick ){
 
-	return new Monome( webkitAudioContext, mixer, bpm );
+	return new Monome( webkitAudioContext, mixer, bpm, tick);
 
 }
+
+
+/*
+	pageVis.onHidden(function(){
+
+		tick.pause();
+
+		monomeA.stop();
+
+
+
+	});
+
+	pageVis.onVisible(function(){
+
+		nextTime = ctx.currentTime + bpm;
+		tick.resume();
+
+	});
+*/

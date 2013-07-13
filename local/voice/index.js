@@ -91,7 +91,9 @@ Voice.prototype = {
 		this.rampUpTimeout = setTimeout(function(){
 
 			self.rampUp.play();
-			self.glide.play();
+			if(this.glide){
+				self.glide.play();
+			}
 
 		}, start );
 
@@ -108,16 +110,19 @@ Voice.prototype = {
 
 		this.masterVolume.gain.value = gain;
 
-		this.osc.start(ctx.currentTime);
 		return this;
 
 	},
 	stop : function(){
 
-		this.rampUp.stop();
-		this.rampDown.stop();
-		clearTimeout(this.rampDownTimeout);
-		clearTimeout(this.rampUpTimeout);
+		if(this.rampUp && this.rampDown){
+
+			this.rampUp.stop();
+			this.rampDown.stop();
+			clearTimeout(this.rampDownTimeout);
+			clearTimeout(this.rampUpTimeout);
+
+		}
 		this.envelope.gain.value = 0;
 
 		this.rampUpTimeout = -1;

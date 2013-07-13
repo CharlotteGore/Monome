@@ -8,10 +8,7 @@
     "charlottegore/dollar": "*",
     "charlottegore/measure": "*",
     "component/event": "*",
-    "charlottegore/tick": "*",
-    "charlottegore/page-visibility": "*",
-    "charlottegore/lzw" : "*",
-    "charlottegore/hashchange" : "*"
+    "charlottegore/lzw" : "*"
     },
   "development": {},
   "license": "MIT",
