@@ -11,6 +11,8 @@ module.exports = function(){
 		var gainA = ctx.createGain();
 		var gainB = ctx.createGain();
 
+		var hashchange = require('hashchange');
+
 		gainA.gain.value = 0.7//Math.cos(0.5 * 0.5* Math.PI);
   		gainB.gain.value = 1.3//Math.cos((1.0 - 0.5) * 0.5* Math.PI);
 
@@ -20,6 +22,9 @@ module.exports = function(){
 
 		gainA.connect(ctx.destination);
 		gainB.connect(ctx.destination);
+
+		var codeA = "Aw18ZXTt/DFOS1b0dEA=";
+		var codeB = "Aw18ZXTt/DFOS1b0dEA=";
 
 
 		var events = require('event');
@@ -47,19 +52,27 @@ module.exports = function(){
 		}
 
 		var css = {
-			"ul.monome.a li.note" : "-webkit-transition: background <%=sweep%>ms, box-shadow <%=glow%>ms, -webkit-transform 0ms;!important",
-			"ul.monome.a li.note.queued" : "-webkit-transition: -webkit-transform <%=lifespan%>ms, margin-left <%=lifespan%>ms, background <%=lifespan%>ms;!important",
-			"ul.monome.a li.note.sweep.on" : "-webkit-transition: -webkit-transform <%=lifespan%>ms, background 0ms;!important",
-			"ul.monome.b li.note" : "-webkit-transition: background <%=sweep%>ms, box-shadow <%=glowB%>ms, -webkit-transform 0ms;!important",
-			"ul.monome.b li.note.queued" : "-webkit-transition: -webkit-transform <%=lifespanB%>ms, margin-left <%=lifespanB%>ms, background <%=lifespanB%>ms;!important",
-			"ul.monome.b li.note.sweep.on" : "-webkit-transition: -webkit-transform <%=lifespanB%>ms, background 0ms;!important" 
+			"ul.monome.a li.note" : "-webkit-transition: -webkit-transform 0ms, background <%=sweep%>ms!important",
+			"ul.monome.a li.note.queued" : "-webkit-transition: -webkit-transform <%=lifespan%>ms, box-shadow <%=lifespan%>ms",
+
+
+			"ul.monome.a li.note.sweep.on" : "-webkit-transition: -webkit-transform <%=lifespan%>ms!important",
+			"ul.monome.b li.note.sweep.on" : "-webkit-transition: -webkit-transform <%=lifespanB%>ms!important",
+			//"ul.monome.b li.note" : "-webkit-transition: -webkit-transform 0ms;!important",
+			"ul.monome.b li.note.queued" : "-webkit-transition: -webkit-transform <%=lifespanB%>ms, box-shadow <%=lifespan%>ms",
+
+			"ul.monome.a li.note.on" : "-webkit-transition: background <%=lifespan%>ms, box-shadow <%=lifespan%>ms!important",
+			"ul.monome.b li.note.on" : "-webkit-transition: background <%=lifespanB%>ms, box-shadow <%=lifespanB%>ms!important",
+
+			"ul.monome.b li.note" : "-webkit-transition: -webkit-transform 0ms, background <%=sweep%>ms!important"
+			
 		}
 
 		var data = {
-			lifespan : (bpm * 1000),
-			sweep : (bpm * 1000),
+			lifespan : (bpm * 1000) * 0.7,
+			sweep : (bpm * 1000) * 2,
 			glow : (bpm * 1000) / 2,
-			lifespanB : (bpm * 8 * 1000),
+			lifespanB : (bpm * 8 * 1000) * 0.7,
 			sweepB : (bpm * 8 * 1000) * 2,
 			glowB : (bpm * 8 * 1000) / 2,				
 		}
@@ -75,10 +88,18 @@ module.exports = function(){
 		}
 
 
+		var monomeA = require('monome-synth').Monome(ctx, mixerA, bpm).glide().updateCode(function(code){
 
+			codeA = code;
+			hashchange.updateHash('#!song=' + codeA + ":" + codeB);
 
-		var monomeA = require('monome-synth').Monome(ctx, mixerA, bpm).glide();
-		var monomeB = require('monome-synth').Monome(ctx, mixerB, bpm * 8).waveform(ref.SAWTOOTH).glide();
+		});
+		var monomeB = require('monome-synth').Monome(ctx, mixerB, bpm * 4).waveform(ref.SQUARE).glide().updateCode(function(code){
+
+			codeB = code;
+			hashchange.updateHash('!song=' + codeA + ":" + codeB);
+
+		});
 
 		monomeA.container.addClass('a');
 		monomeB.container.addClass('b')
@@ -92,11 +113,11 @@ module.exports = function(){
 
 			monomeA
 				.resize({ x : width, y : width })
-				.move({ x : ss.x * 0.1 , y : ss.y * 0.1 });
+				.move({ x : ss.x * 0.05 , y : ss.y * 0.1 });
 
 			monomeB
 				.resize({ x : width, y : width })
-				.move({ x : (ss.x / 2) , y : ss.y * 0.1 });
+				.move({ x : (ss.x / 2) + (ss.x * 0.05) , y : ss.y * 0.1 });
 
 		}
 
@@ -104,36 +125,33 @@ module.exports = function(){
 
 		resize();
 
-}
+		hashchange.update(function(frag){
 
-/*
+			if(frag!=="" && frag.match(/!song\=/)){
 
-	hashChange.update(function(frag){
+				var str = frag.replace('!song=', '');
+				var bits = str.split(':');
 
-		if(frag !== ""){
 
-			var str = lzw.decompressFromBase64(frag.match(/song\=([A-Za-z0-9+\/\=]+)/)[1]);
 
-			for(var i = 0; i < 16; i++){
+				if(bits.length === 1){
 
-				for(var j = 0; j < 16; j++){
-					self.rows[i][j].on = (parseInt(str.substr(j + (i * 16), 1), 2) === 1 ? true : false);
+					codeA = bits[0];
+					codeB = bits[0];
 
-					if(self.rows[i][j].on){
+				}else{
 
-						self.rows[i][j].addClass('on');
+					codeA = bits[0];
+					codeB = bits[1];
 
-					} else {
 
-						self.rows[i][j].removeClass('on');
-					}
 				}
+
+				monomeA.useCode(codeA);
+				monomeB.useCode(codeB);
 
 			}
 
-		}
+		}).update();
 
-	}).update();
-
-
-*/
+}

@@ -44,7 +44,7 @@ var Monome = function( webkitAudioContext, mixer, bpm ){
 
 		var v = voice(ctx, mixer)
 		v.setBPM( bpm )
-		v.frequency(freqs[i + 2])
+		v.frequency(freqs[i + 4])
 		v.waveform(waveform);
 
 		this.voices.push( v );
@@ -141,12 +141,6 @@ var Monome = function( webkitAudioContext, mixer, bpm ){
 
 
 	});
-
-	//self.oscillators[0].noteOn(0);
-	//self.oscillators[1].noteOn(0);
-	//self.oscillators[2].noteOn(0);
-	//self.oscillators[3].noteOn(0);
-
 	return this;
 
 }
@@ -156,7 +150,11 @@ Monome.prototype = {
 
 		if(callback){
 
+			this.sendNewCode = callback;
+			return this;
+
 		}else{
+
 			var str = "";
 			for(var i = 0; i < 16; i++){
 
@@ -174,9 +172,38 @@ Monome.prototype = {
 
 			}
 
-			//hashChange.updateHash('!song=' + lzw.compressToBase64(str));
+			if(this.sendNewCode){
+
+				this.sendNewCode( lzw.compressToBase64(str) );
+
+			}
 
 		}
+
+	},
+	useCode : function(code){
+
+		var str = lzw.decompressFromBase64(code);
+		var self = this;
+
+			for(var i = 0; i < 16; i++){
+
+				for(var j = 0; j < 16; j++){
+					self.rows[i][j].on = (parseInt(str.substr(j + (i * 16), 1), 2) === 1 ? true : false);
+
+					if(self.rows[i][j].on){
+
+						self.rows[i][j].addClass('on');
+
+					} else {
+
+						self.rows[i][j].removeClass('on');
+					}
+				}
+
+			}
+
+		return this;
 
 	},
 	resize : function( ss ){
@@ -213,10 +240,6 @@ Monome.prototype = {
 			this.voices[i].waveform(waveform);
 		}
 		return this;
-
-	},
-	useCode : function( code ){
-
 
 	},
 	glide : function(  ){

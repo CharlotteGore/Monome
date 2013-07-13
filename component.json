@@ -6,7 +6,8 @@
   "keywords": [],
   "dependencies": {
     "component/event": "*",
-    "charlottegore/measure": "*"
+    "charlottegore/measure": "*",
+    "charlottegore/hashchange": "*"
   },
   "development": {},
   "license": "MIT",

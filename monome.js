@@ -434,6 +434,215 @@ module.exports = function (obj, iterator, context) {
 };
 
 });
+require.register("component-indexof/index.js", function(exports, require, module){
+
+var indexOf = [].indexOf;
+
+module.exports = function(arr, obj){
+  if (indexOf) return arr.indexOf(obj);
+  for (var i = 0; i < arr.length; ++i) {
+    if (arr[i] === obj) return i;
+  }
+  return -1;
+};
+});
+require.register("charlottegore-hashchange/index.js", function(exports, require, module){
+var each = require('each'),
+	indexOf = require('indexof');
+
+var getFragment = function( url ){
+
+	var url = url || window.location.href;
+    return url.replace( /^[^#]*#?(.*)$/, '$1' );
+
+}
+
+var detectIE6to8 = function(){
+	var rv = -1; // Return value assumes failure.
+	  if (navigator.appName == 'Microsoft Internet Explorer')
+	  {
+	    var ua = navigator.userAgent;
+	    var re  = new RegExp("MSIE ([0-9]{1,}[\.0-9]{0,})");
+	    if (re.exec(ua) != null)
+	      rv = parseFloat( RegExp.$1 );
+	  }
+
+	  if(rv===6 || rv ===7){
+
+	  	return true;
+
+	  } else {
+
+	  	return false;
+
+	  }
+}
+
+var HashChange = function(){
+
+	var self = this;
+
+	this.onChangeCallbacks = [];
+
+	if(detectIE6to8()){
+
+		this.setupFallback();
+
+	}else{
+
+		window.onhashchange = function(){
+
+			self.hashChanged();
+
+		}
+
+	}
+
+	return this;
+
+};
+
+HashChange.prototype = {
+
+	update : function( callback ){
+
+		if(callback){
+
+			this.onChangeCallbacks.push( callback );
+			return this;
+
+		} else {
+
+			this.hashChanged();
+
+		}
+
+	},
+
+	updateHash : function( hash ){
+
+		this.currentHash = hash;
+
+		window.location.href = window.location.href.replace( /#.*/, '') + '#' + hash;
+
+	},
+
+	unbind : function( callback ){
+
+		var i = indexOf( this.onChangeCallbacks , callback);
+
+		if(i !== -1){
+
+			this.onChangeCallbacks.splice(i - 1, 1);
+
+		}
+
+		return this;
+
+	},
+
+	hashChanged : function(){
+
+		var self = this;
+
+		if(this.currentHash!==getFragment()){
+
+			this.currentHash = getFragment();
+
+			if(this.onChangeCallbacks.length){
+
+				each(this.onChangeCallbacks, function( callback ){
+
+					callback( self.currentHash );
+
+					return true;
+
+				});
+
+			}
+
+		}
+
+		return this;
+
+	},
+
+	setupFallback : function(){
+
+		var self = this;
+
+		window.onload = function(){
+
+			var tickerId = -1;
+			var delay = 100;
+
+			var iframe = document.createElement('iframe');
+			iframe.setAttribute('src', 'javascript:0');
+			iframe.style.display = "none";
+
+			document.getElementsByTagName('body')[0].appendChild(iframe);
+
+			iframe = iframe.contentWindow;
+
+			var setHistory = function( hash, historyHash ){
+
+				if( hash !== historyHash ){
+
+					var doc = iframe.document;
+					doc.open();
+					doc.close();
+					doc.location.hash = '#' + hash;
+
+				}
+
+			};
+
+			var getHistory = function(){
+
+				return getFragment( iframe.document.location.href );
+
+			};
+
+			var old = getFragment();
+
+			setHistory( old );
+
+			var ticker = function(){
+
+				var curr = getFragment(),
+					historyHash = getHistory( old );
+
+				if(curr !== old){
+
+					setHistory( old = curr, historyHash )
+					self.hashChanged();
+
+				}else if( historyHash !== old ){
+
+					window.location.href = window.location.href.replace( /#.*/, '') + '#' + historyHash;
+
+				}
+
+				tickerId = setTimeout(ticker, delay);
+
+			};
+
+			setTimeout(ticker, delay)
+
+
+			return this;
+
+		}
+
+	}
+
+}
+
+hashChange = new HashChange();
+
+module.exports = hashChange;
+
+});
 require.register("component-classes/index.js", function(exports, require, module){
 
 /**
@@ -1789,215 +1998,6 @@ var LZString = {
 
 module.exports = LZString;
 });
-require.register("component-indexof/index.js", function(exports, require, module){
-
-var indexOf = [].indexOf;
-
-module.exports = function(arr, obj){
-  if (indexOf) return arr.indexOf(obj);
-  for (var i = 0; i < arr.length; ++i) {
-    if (arr[i] === obj) return i;
-  }
-  return -1;
-};
-});
-require.register("charlottegore-hashchange/index.js", function(exports, require, module){
-var each = require('each'),
-	indexOf = require('indexof');
-
-var getFragment = function( url ){
-
-	var url = url || window.location.href;
-    return url.replace( /^[^#]*#?(.*)$/, '$1' );
-
-}
-
-var detectIE6to8 = function(){
-	var rv = -1; // Return value assumes failure.
-	  if (navigator.appName == 'Microsoft Internet Explorer')
-	  {
-	    var ua = navigator.userAgent;
-	    var re  = new RegExp("MSIE ([0-9]{1,}[\.0-9]{0,})");
-	    if (re.exec(ua) != null)
-	      rv = parseFloat( RegExp.$1 );
-	  }
-
-	  if(rv===6 || rv ===7){
-
-	  	return true;
-
-	  } else {
-
-	  	return false;
-
-	  }
-}
-
-var HashChange = function(){
-
-	var self = this;
-
-	this.onChangeCallbacks = [];
-
-	if(detectIE6to8()){
-
-		this.setupFallback();
-
-	}else{
-
-		window.onhashchange = function(){
-
-			self.hashChanged();
-
-		}
-
-	}
-
-	return this;
-
-};
-
-HashChange.prototype = {
-
-	update : function( callback ){
-
-		if(callback){
-
-			this.onChangeCallbacks.push( callback );
-			return this;
-
-		} else {
-
-			this.hashChanged();
-
-		}
-
-	},
-
-	updateHash : function( hash ){
-
-		this.currentHash = hash;
-
-		window.location.href = window.location.href.replace( /#.*/, '') + '#' + hash;
-
-	},
-
-	unbind : function( callback ){
-
-		var i = indexOf( this.onChangeCallbacks , callback);
-
-		if(i !== -1){
-
-			this.onChangeCallbacks.splice(i - 1, 1);
-
-		}
-
-		return this;
-
-	},
-
-	hashChanged : function(){
-
-		var self = this;
-
-		if(this.currentHash!==getFragment()){
-
-			this.currentHash = getFragment();
-
-			if(this.onChangeCallbacks.length){
-
-				each(this.onChangeCallbacks, function( callback ){
-
-					callback( self.currentHash );
-
-					return true;
-
-				});
-
-			}
-
-		}
-
-		return this;
-
-	},
-
-	setupFallback : function(){
-
-		var self = this;
-
-		window.onload = function(){
-
-			var tickerId = -1;
-			var delay = 100;
-
-			var iframe = document.createElement('iframe');
-			iframe.setAttribute('src', 'javascript:0');
-			iframe.style.display = "none";
-
-			document.getElementsByTagName('body')[0].appendChild(iframe);
-
-			iframe = iframe.contentWindow;
-
-			var setHistory = function( hash, historyHash ){
-
-				if( hash !== historyHash ){
-
-					var doc = iframe.document;
-					doc.open();
-					doc.close();
-					doc.location.hash = '#' + hash;
-
-				}
-
-			};
-
-			var getHistory = function(){
-
-				return getFragment( iframe.document.location.href );
-
-			};
-
-			var old = getFragment();
-
-			setHistory( old );
-
-			var ticker = function(){
-
-				var curr = getFragment(),
-					historyHash = getHistory( old );
-
-				if(curr !== old){
-
-					setHistory( old = curr, historyHash )
-					self.hashChanged();
-
-				}else if( historyHash !== old ){
-
-					window.location.href = window.location.href.replace( /#.*/, '') + '#' + historyHash;
-
-				}
-
-				tickerId = setTimeout(ticker, delay);
-
-			};
-
-			setTimeout(ticker, delay)
-
-
-			return this;
-
-		}
-
-	}
-
-}
-
-hashChange = new HashChange();
-
-module.exports = hashChange;
-
-});
 require.register("notebutton/index.js", function(exports, require, module){
 var $ = require('dollar');
 
@@ -2112,7 +2112,7 @@ var Monome = function( webkitAudioContext, mixer, bpm ){
 
 		var v = voice(ctx, mixer)
 		v.setBPM( bpm )
-		v.frequency(freqs[i + 2])
+		v.frequency(freqs[i + 4])
 		v.waveform(waveform);
 
 		this.voices.push( v );
@@ -2209,12 +2209,6 @@ var Monome = function( webkitAudioContext, mixer, bpm ){
 
 
 	});
-
-	//self.oscillators[0].noteOn(0);
-	//self.oscillators[1].noteOn(0);
-	//self.oscillators[2].noteOn(0);
-	//self.oscillators[3].noteOn(0);
-
 	return this;
 
 }
@@ -2224,7 +2218,11 @@ Monome.prototype = {
 
 		if(callback){
 
+			this.sendNewCode = callback;
+			return this;
+
 		}else{
+
 			var str = "";
 			for(var i = 0; i < 16; i++){
 
@@ -2242,9 +2240,38 @@ Monome.prototype = {
 
 			}
 
-			//hashChange.updateHash('!song=' + lzw.compressToBase64(str));
+			if(this.sendNewCode){
+
+				this.sendNewCode( lzw.compressToBase64(str) );
+
+			}
 
 		}
+
+	},
+	useCode : function(code){
+
+		var str = lzw.decompressFromBase64(code);
+		var self = this;
+
+			for(var i = 0; i < 16; i++){
+
+				for(var j = 0; j < 16; j++){
+					self.rows[i][j].on = (parseInt(str.substr(j + (i * 16), 1), 2) === 1 ? true : false);
+
+					if(self.rows[i][j].on){
+
+						self.rows[i][j].addClass('on');
+
+					} else {
+
+						self.rows[i][j].removeClass('on');
+					}
+				}
+
+			}
+
+		return this;
 
 	},
 	resize : function( ss ){
@@ -2281,10 +2308,6 @@ Monome.prototype = {
 			this.voices[i].waveform(waveform);
 		}
 		return this;
-
-	},
-	useCode : function( code ){
-
 
 	},
 	glide : function(  ){
@@ -3253,14 +3276,19 @@ Voice.prototype = {
 
 		var bpm = this.bpm;
 
-		debugger;
-
 		clearTimeout(this.rampDownTimeout);
 		clearTimeout(this.rampUpTimeout);
 
 		if(this.rampUp && this.rampDown){
 			this.rampDown.stop();
 			this.rampUp.stop();
+
+		}
+
+		if(this.glide){
+
+			this.glide.stop();
+
 		}
 
 		var updateEnvelope = function(o){
@@ -3293,13 +3321,11 @@ Voice.prototype = {
 
 		}, start );
 
-		debugger;
-		
 		this.rampDownTimeout = setTimeout(function(){
 
 			self.rampDown.play();
 
-		}, start + Math.round((bpm * 1000 * 0.8)));
+		}, start + Math.round((bpm * 1000 * 0.9)));
 
 		return this;
 
@@ -3389,6 +3415,8 @@ module.exports = function(){
 		var gainA = ctx.createGain();
 		var gainB = ctx.createGain();
 
+		var hashchange = require('hashchange');
+
 		gainA.gain.value = 0.7//Math.cos(0.5 * 0.5* Math.PI);
   		gainB.gain.value = 1.3//Math.cos((1.0 - 0.5) * 0.5* Math.PI);
 
@@ -3398,6 +3426,9 @@ module.exports = function(){
 
 		gainA.connect(ctx.destination);
 		gainB.connect(ctx.destination);
+
+		var codeA = "Aw18ZXTt/DFOS1b0dEA=";
+		var codeB = "Aw18ZXTt/DFOS1b0dEA=";
 
 
 		var events = require('event');
@@ -3425,19 +3456,27 @@ module.exports = function(){
 		}
 
 		var css = {
-			"ul.monome.a li.note" : "-webkit-transition: background <%=sweep%>ms, box-shadow <%=glow%>ms, -webkit-transform 0ms;!important",
-			"ul.monome.a li.note.queued" : "-webkit-transition: -webkit-transform <%=lifespan%>ms, margin-left <%=lifespan%>ms, background <%=lifespan%>ms;!important",
-			"ul.monome.a li.note.sweep.on" : "-webkit-transition: -webkit-transform <%=lifespan%>ms, background 0ms;!important",
-			"ul.monome.b li.note" : "-webkit-transition: background <%=sweep%>ms, box-shadow <%=glowB%>ms, -webkit-transform 0ms;!important",
-			"ul.monome.b li.note.queued" : "-webkit-transition: -webkit-transform <%=lifespanB%>ms, margin-left <%=lifespanB%>ms, background <%=lifespanB%>ms;!important",
-			"ul.monome.b li.note.sweep.on" : "-webkit-transition: -webkit-transform <%=lifespanB%>ms, background 0ms;!important" 
+			"ul.monome.a li.note" : "-webkit-transition: -webkit-transform 0ms, background <%=sweep%>ms!important",
+			"ul.monome.a li.note.queued" : "-webkit-transition: -webkit-transform <%=lifespan%>ms, box-shadow <%=lifespan%>ms",
+
+
+			"ul.monome.a li.note.sweep.on" : "-webkit-transition: -webkit-transform <%=lifespan%>ms!important",
+			"ul.monome.b li.note.sweep.on" : "-webkit-transition: -webkit-transform <%=lifespanB%>ms!important",
+			//"ul.monome.b li.note" : "-webkit-transition: -webkit-transform 0ms;!important",
+			"ul.monome.b li.note.queued" : "-webkit-transition: -webkit-transform <%=lifespanB%>ms, box-shadow <%=lifespan%>ms",
+
+			"ul.monome.a li.note.on" : "-webkit-transition: background <%=lifespan%>ms, box-shadow <%=lifespan%>ms!important",
+			"ul.monome.b li.note.on" : "-webkit-transition: background <%=lifespanB%>ms, box-shadow <%=lifespanB%>ms!important",
+
+			"ul.monome.b li.note" : "-webkit-transition: -webkit-transform 0ms, background <%=sweep%>ms!important"
+			
 		}
 
 		var data = {
-			lifespan : (bpm * 1000),
-			sweep : (bpm * 1000),
+			lifespan : (bpm * 1000) * 0.7,
+			sweep : (bpm * 1000) * 2,
 			glow : (bpm * 1000) / 2,
-			lifespanB : (bpm * 8 * 1000),
+			lifespanB : (bpm * 8 * 1000) * 0.7,
 			sweepB : (bpm * 8 * 1000) * 2,
 			glowB : (bpm * 8 * 1000) / 2,				
 		}
@@ -3453,10 +3492,18 @@ module.exports = function(){
 		}
 
 
+		var monomeA = require('monome-synth').Monome(ctx, mixerA, bpm).glide().updateCode(function(code){
 
+			codeA = code;
+			hashchange.updateHash('#!song=' + codeA + ":" + codeB);
 
-		var monomeA = require('monome-synth').Monome(ctx, mixerA, bpm).glide();
-		var monomeB = require('monome-synth').Monome(ctx, mixerB, bpm * 8).waveform(ref.SAWTOOTH).glide();
+		});
+		var monomeB = require('monome-synth').Monome(ctx, mixerB, bpm * 4).waveform(ref.SQUARE).glide().updateCode(function(code){
+
+			codeB = code;
+			hashchange.updateHash('!song=' + codeA + ":" + codeB);
+
+		});
 
 		monomeA.container.addClass('a');
 		monomeB.container.addClass('b')
@@ -3470,11 +3517,11 @@ module.exports = function(){
 
 			monomeA
 				.resize({ x : width, y : width })
-				.move({ x : ss.x * 0.1 , y : ss.y * 0.1 });
+				.move({ x : ss.x * 0.05 , y : ss.y * 0.1 });
 
 			monomeB
 				.resize({ x : width, y : width })
-				.move({ x : (ss.x / 2) , y : ss.y * 0.1 });
+				.move({ x : (ss.x / 2) + (ss.x * 0.05) , y : ss.y * 0.1 });
 
 		}
 
@@ -3482,43 +3529,46 @@ module.exports = function(){
 
 		resize();
 
-}
+		hashchange.update(function(frag){
 
-/*
+			if(frag!=="" && frag.match(/!song\=/)){
 
-	hashChange.update(function(frag){
+				var str = frag.replace('!song=', '');
+				var bits = str.split(':');
 
-		if(frag !== ""){
 
-			var str = lzw.decompressFromBase64(frag.match(/song\=([A-Za-z0-9+\/\=]+)/)[1]);
 
-			for(var i = 0; i < 16; i++){
+				if(bits.length === 1){
 
-				for(var j = 0; j < 16; j++){
-					self.rows[i][j].on = (parseInt(str.substr(j + (i * 16), 1), 2) === 1 ? true : false);
+					codeA = bits[0];
+					codeB = bits[0];
 
-					if(self.rows[i][j].on){
+				}else{
 
-						self.rows[i][j].addClass('on');
+					codeA = bits[0];
+					codeB = bits[1];
 
-					} else {
 
-						self.rows[i][j].removeClass('on');
-					}
 				}
+
+				monomeA.useCode(codeA);
+				monomeB.useCode(codeB);
 
 			}
 
-		}
+		}).update();
 
-	}).update();
+}
 
-
-*/
 });
 require.alias("component-event/index.js", "monome/deps/event/index.js");
 
 require.alias("charlottegore-measure/index.js", "monome/deps/measure/index.js");
+
+require.alias("charlottegore-hashchange/index.js", "monome/deps/hashchange/index.js");
+require.alias("manuelstofer-each/index.js", "charlottegore-hashchange/deps/each/index.js");
+
+require.alias("component-indexof/index.js", "charlottegore-hashchange/deps/indexof/index.js");
 
 require.alias("monome-synth/index.js", "monome/deps/monome-synth/index.js");
 require.alias("charlottegore-dollar/index.js", "monome-synth/deps/dollar/index.js");

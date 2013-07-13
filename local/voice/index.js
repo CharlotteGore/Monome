@@ -50,14 +50,19 @@ Voice.prototype = {
 
 		var bpm = this.bpm;
 
-		debugger;
-
 		clearTimeout(this.rampDownTimeout);
 		clearTimeout(this.rampUpTimeout);
 
 		if(this.rampUp && this.rampDown){
 			this.rampDown.stop();
 			this.rampUp.stop();
+
+		}
+
+		if(this.glide){
+
+			this.glide.stop();
+
 		}
 
 		var updateEnvelope = function(o){
@@ -90,13 +95,11 @@ Voice.prototype = {
 
 		}, start );
 
-		debugger;
-		
 		this.rampDownTimeout = setTimeout(function(){
 
 			self.rampDown.play();
 
-		}, start + Math.round((bpm * 1000 * 0.8)));
+		}, start + Math.round((bpm * 1000 * 0.9)));
 
 		return this;
 
