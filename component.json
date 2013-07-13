@@ -9,7 +9,6 @@
     "charlottegore/measure": "*",
     "component/event": "*",
     "charlottegore/tick": "*",
-    "charlottegore/tween": "*",
     "charlottegore/page-visibility": "*",
     "charlottegore/lzw" : "*",
     "charlottegore/hashchange" : "*"
@@ -18,5 +17,9 @@
   "license": "MIT",
   "scripts": [
     "index.js"
-  ]
+  ],
+  "local" : [
+    "voice", "noteButton"
+  ],
+  "paths" : ["./local"]
 }

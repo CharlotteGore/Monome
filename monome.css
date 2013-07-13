@@ -26,7 +26,6 @@ ul.monome li.note {
 	border-radius: 10%;
 	margin-top: 0;
 	margin-left: 0;
-	-webkit-transition: background 1000ms, box-shadow 250ms, -webkit-transform 0ms, margin-left 500ms, opacity 500ms;
 	opacity: 1;
 	z-index:1;
 	margin-left:0;
@@ -36,7 +35,6 @@ ul.monome li.note {
 
 ul.monome li.note:hover{
 	background:#3d77d7;
-	-webkit-transition: background 0ms
 }
 
 ul.monome li.note.on{
@@ -53,37 +51,33 @@ ul.monome li.note.queued{
 	background: #fff;
 	border: 1px solid #fff;
 	-webkit-transform:rotate(0deg);
-	-webkit-transition: -webkit-transform 500ms, margin-left 500ms, background 500ms; 
-	
 }
 
 ul.monome li.note.unqueued{
 box-shadow: 0px 0px 5px #ff7c07;
 	background: #ff7c07;
 	border: 1px solid #ff7c07;
-
-	/* -webkit-transform:rotate(359deg);*/
-	-webkit-transition: -webkit-transform 0ms, opacity 500ms, background 500ms; 
-	
 }
 
 ul.monome li.note.sweep{
 box-shadow: 0px 0px 10px #add6ff;
 	background: #add6ff;	
 	border: 1px solid #add6ff;
-	
-	-webkit-transition: background 0ms;
 }
 
 ul.monome li.note.sweep.on {
 box-shadow: 0px 0px 20px #fff;
 	background: #ffffff;
 	border: 1px solid #ffffff;
-
 	-webkit-transform:rotate(90deg);
-	-webkit-transition: -webkit-transform 500ms, opacity 500ms, margin-left 500ms, background 0ms;
-
 	z-index:1000;
 	margin-left:0;
 
+}
+
+ul.monome li.note:hover{
+	-webkit-transition: background 0ms
+}
+ul.monome li.note.sweep{
+	-webkit-transition: background 0ms;
 }

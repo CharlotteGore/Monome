@@ -1,0 +1,15 @@
+{
+  "name": "voice",
+  "repo": "charlottegore/voice",
+  "description": "An oscillator voice with on/off controls",
+  "version": "0.0.1",
+  "keywords": [],
+  "dependencies": {
+    "charlottegore/tween": "*"
+  },
+  "development": {},
+  "license": "MIT",
+  "scripts": [
+    "index.js"
+  ]
+}

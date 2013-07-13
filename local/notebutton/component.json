@@ -1,0 +1,15 @@
+{
+  "name": "notebutton",
+  "repo": "charlottegore/notebutton",
+  "description": "a note button",
+  "version": "0.0.1",
+  "keywords": [],
+  "dependencies": {
+    "charlottegore/dollar": "*"
+  },
+  "development": {},
+  "license": "MIT",
+  "scripts": [
+    "index.js"
+  ]
+}

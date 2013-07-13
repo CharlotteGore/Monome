@@ -1,24 +1,28 @@
 window.$ = require('dollar');
-window.measure = require('measure');
-var tick = require('tick');
-var pageVis = require('page-visibility');
-var lzw = require('lzw');
-var hashChange = require('hashchange');
 
-var freqs = [1244.51, 1108.73, 932.33, 830.61, 740.00, 622.25, 554.37, 466.16, 415.30, 370.00, 311.13, 277.18, 233.08, 207.65, 185.00, 155.56, 138.59, 116.54, 103.83, 92.50]
+var measure = require('measure'),
+	tick = require('tick'),
+	pageVis = require('page-visibility'),
+	lzw = require('lzw'),
+	hashChange = require('hashchange'),
+	events = require('event'),
+	noteButton = require("notebutton").NoteButton,
+	voice = require("voice").Voice,
 
-var ctx = new webkitAudioContext();
-var bpm = 0.5;
+	freqs = [1244.51, 1108.73, 932.33, 830.61, 740.00, 622.25, 554.37, 466.16, 415.30, 370.00, 311.13, 277.18, 233.08, 207.65, 185.00, 155.56, 138.59, 116.54, 103.83, 92.50],
 
-var osc = ctx.createOscillator();
-osc.connect(ctx.destination);
+	ctx,
+	bpm,
+	waveform = require("voice").SINE,
+	mixer;
 
-var mixer = ctx.createChannelMerger(16);
-mixer.connect(ctx.destination);
-
-var Monome = function(){
+var Monome = function( webkitAudioContext, mixer, bpm ){
 
 	var self = this;
+
+	ctx = webkitAudioContext;
+	mixer = mixer;
+	bpm = bpm;
 
 	this.rows = [];
 	this.voices = [];
@@ -29,7 +33,7 @@ var Monome = function(){
 
 	var screenSize = measure().screenSize();
 
-	var cubeSize = Math.floor((screenSize.y - 100) / 16) - 5;
+	
 
 	this.container = ($().create('ul')).addClass('monome');
 
@@ -42,7 +46,13 @@ var Monome = function(){
 		this.rows.push(arr);
 
 		// create a new voice, while we're in a 0-15 loop. 
-		this.voices.push(new Voice(freqs[i + 2]))
+
+		var v = voice(ctx, freqs[i + 2])
+		v.bpm(bpm)
+		v.frequency(freqs[i + 2])
+		v.waveform(waveform);
+
+		this.voices.push( v );
 
 		var ul = $().create('ul');
 
@@ -50,13 +60,14 @@ var Monome = function(){
 
 		for(var j = 0; j < 16; j++){
 
-			var button = new NoteButton(cubeSize, i, j, function(){
+			var button = noteButton( function(){
 
 				self.updateCode();
 
 			});
 
-			ul.append(button.getElement());
+			button
+				.appendTo( ul )
 
 			arr.push(button);
 
@@ -65,15 +76,10 @@ var Monome = function(){
 		this.container.append(ul);
 	}
 
-
-	this.container.css({
-		position: 'absolute',
-		top : 50,
-		left: screenSize.x / 2 - ((cubeSize + 5) * 8)			
-	})
-
 	var index = 15;
 	var currentCol = 15;
+
+
 
 	var nextTime = ctx.currentTime + bpm;
 
@@ -104,7 +110,7 @@ var Monome = function(){
 
 			for(var i = 0; i < 16; i++){
 
-				self.rows[index % 16][i].element.removeClass('sweep');	
+				self.rows[index % 16][i].removeClass('sweep');	
 			}
 
 			index++;
@@ -112,7 +118,7 @@ var Monome = function(){
 			var notesOn=0;
 
 			for(var i = 0; i < 16; i++){
-				self.rows[index % 16][i].element.addClass('sweep');
+				self.rows[index % 16][i].addClass('sweep');
 
 				if(self.rows[index % 16][i].on === true){
 					notesOn ++;
@@ -123,14 +129,12 @@ var Monome = function(){
 			for(var i = 0; i < 16; i++){
 
 				if(self.rows[index % 16][i].on === true){
-
-					console.log(Math.cos((1 - (1 / notesOn)) * (1 / notesOn) * Math.PI));
 					self.voices[i].gain( Math.cos((1 - (1 / (notesOn ))) * (1 / (notesOn )) * Math.PI) * 0.15 ).play(nextTime + 0.1);	
-					self.rows[index % 16][i].element.removeClass('queued');				
+					self.rows[index % 16][i].removeClass('queued');				
 				}	
 
 				if(self.rows[(index + 1) % 16][i].on === true){
-					self.rows[(index + 1) % 16][i].element.addClass('queued');		
+					self.rows[(index + 1) % 16][i].addClass('queued');		
 				}
 
 
@@ -145,28 +149,38 @@ var Monome = function(){
 
 	hashChange.update(function(frag){
 
-		var str = lzw.decompressFromBase64(frag.match(/song\=([A-Za-z0-9+\/\=]+)/)[1]);
+		if(frag !== ""){
 
-		for(var i = 0; i < 16; i++){
+			var str = lzw.decompressFromBase64(frag.match(/song\=([A-Za-z0-9+\/\=]+)/)[1]);
 
-			for(var j = 0; j < 16; j++){
-				self.rows[i][j].on = (parseInt(str.substr(j + (i * 16), 1), 2) === 1 ? true : false);
+			for(var i = 0; i < 16; i++){
 
-				if(self.rows[i][j].on){
+				for(var j = 0; j < 16; j++){
+					self.rows[i][j].on = (parseInt(str.substr(j + (i * 16), 1), 2) === 1 ? true : false);
 
-					self.rows[i][j].element.addClass('on');
+					if(self.rows[i][j].on){
 
-				} else {
+						self.rows[i][j].addClass('on');
 
-					self.rows[i][j].element.removeClass('on');
+					} else {
+
+						self.rows[i][j].removeClass('on');
+					}
 				}
+
 			}
 
 		}
 
 	}).update();
 
+	events.bind(window, "resize", function(){
 
+		self.resize();
+
+	});
+
+	self.resize();
 
 	//self.oscillators[0].noteOn(0);
 	//self.oscillators[1].noteOn(0);
@@ -198,153 +212,40 @@ Monome.prototype = {
 
 		hashChange.updateHash('!song=' + lzw.compressToBase64(str));
 
-	}
-}
+	},
+	resize : function(){
 
-var Voice = function( frequency ){
+		var ss = measure().screenSize();
+		var cubeSize = Math.floor((ss.y - 100) / 16);
 
-	var self = this;
+		this.container.css({
+			position: 'absolute',
+			top : 50,
+			left: ss.x / 2 - (cubeSize * 8)			
+		});
+		
 
-	// create our notes
-	this.filter = ctx.createBiquadFilter(); // low pass filter for getting rid of errant harmonics.
-	this.masterVolume = ctx.createGain(); // master volume is set based on the number of sounds to be played this step
-	this.envelope = ctx.createGain(); // envelope filter for playing notes
-	this.osc = ctx.createOscillator(); // our oscillator. Probably shouldn't be making lots of these.
-
-	// route the web audio notes
-	this.masterVolume.connect(mixer);
-	this.filter.connect(this.masterVolume);
-	this.envelope.connect(this.filter);
-	this.osc.connect(this.envelope);
-
-	// configure the notes
-	this.masterVolume.gain.value = 0;
-	this.envelope.gain.value = 0;
-
-	this.filter.type = 0;
-	this.filter.frequency.value = frequency * 2;
-	this.filter.Q.value =0.5 ;
-
-
-	
-	this.osc.type=this.osc.SQUARE;
-	this.osc.frequency.value = frequency;
-
-	var updateEnvelope = function(o){
-
-		self.envelope.gain.value = o.value;
-
-	}
-
-	this.rampUp = require('tween').Tweening({ value: 0 }).to({ value: 1 }).using('linear').duration(25).tick(updateEnvelope).begin(function(){self.osc.type = self.osc.SINE}).finish(function(){ self.osc.type = self.osc.SINE});
-	this.rampDown = require('tween').Tweening({ value: 1 }).to({ value: 0 }).using('linear').duration(400).tick(updateEnvelope).begin(function(){self.osc.type = self.osc.SINE});
-	this.glide = require('tween').Tweening({ value: -4800 }).to({ value: 0 }).using('ease-out').duration(50).tick(function(o){self.osc.detune.value = o.value;});
-
-	this.rampUpTimeout = -1;
-	this.rampDownTimeout = -1;
-
-	// start the oscillator
-	this.osc.start(ctx.currentTime);
-
-	return this;
-
-
-}
-
-Voice.prototype = {
-
-	play : function(startTime){
-
-		clearTimeout(this.rampDownTimeout);
-		this.rampDown.stop();
-
-		this.osc.start(ctx.currentTime);
-
-		var self = this,
-			start = Math.floor(startTime - ctx.currentTime) * 1000;
-
-		var updateEnvelope = function(o){
-
-			self.envelope.gain.value = o.value;
+		for(var i = 0; i < 16; i++){
+			for(var j = 0; j < 16; j++){
+				this.rows[i][j]
+					.resize( Math.floor(cubeSize * 0.90) )
+					.move( i * cubeSize , j * cubeSize )
+			}
 
 		}
 
-		this.rampUp.from({value : this.envelope.gain.value }).to({ value: 1 }).using('ease-in').duration(25);
-		
-		this.rampUpTimeout = setTimeout(function(){
-
-			self.rampUp.play();
-			self.glide.play();
-
-		}, start );
-		
-		this.rampDownTimeout = setTimeout(function(){
-
-			self.rampDown.play();
-
-		}, start + 440);
-
-		
-
-	},
-	gain : function( gain ){
-
-		this.masterVolume.gain.value = gain;
-
-		this.osc.start(ctx.currentTime);
 		return this;
 
-	},
-	stop : function(){
-
-		this.rampUp.stop();
-		this.rampDown.stop();
-		clearTimeout(this.rampDownTimeout);
-		clearTimeout(this.rampUpTimeout);
-		this.envelope.gain.value = 0;
-
-		this.rampUpTimeout = -1;
-		this.rampDownTimeout = -1;
-
-	}
+	}, 
+	move : function(){
 
 
-}
-
-var NoteButton = function(cubeSize, i, j, onUpdate){
-
-	var self = this;
-	this.on = false;
-
-	this.element = ($().create('li')).addClass('note');
-
-	this.element.css({
-		width : cubeSize -2 + "px",
-		height : cubeSize -2 + "px",
-		left : (cubeSize + 5) * i + "px",
-		top : (cubeSize + 5) * j + "px",
-	});
-
-	this.element.bind('click', function(){
-
-		self.element.toggleClass('on');
-		self.on = !self.on;
-		self.element.removeClass('unqueued').removeClass('queued');
-		onUpdate();
-
-	});
-
-	return this;
-
-}
-
-NoteButton.prototype = {
-	getElement : function(){
-
-		return this.element;
 
 	}
 }
 
+module.exports.Monome = function( webkitAudioContext, mixer, bpm ){
 
-new Monome();
+	return new Monome( webkitAudioContext, mixer, bpm );
+
+}
