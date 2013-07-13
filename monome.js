@@ -204,6 +204,212 @@ require.relative = function(parent) {
 
   return localRequire;
 };
+require.register("component-event/index.js", function(exports, require, module){
+
+/**
+ * Bind `el` event `type` to `fn`.
+ *
+ * @param {Element} el
+ * @param {String} type
+ * @param {Function} fn
+ * @param {Boolean} capture
+ * @return {Function}
+ * @api public
+ */
+
+exports.bind = function(el, type, fn, capture){
+  if (el.addEventListener) {
+    el.addEventListener(type, fn, capture || false);
+  } else {
+    el.attachEvent('on' + type, fn);
+  }
+  return fn;
+};
+
+/**
+ * Unbind `el` event `type`'s callback `fn`.
+ *
+ * @param {Element} el
+ * @param {String} type
+ * @param {Function} fn
+ * @param {Boolean} capture
+ * @return {Function}
+ * @api public
+ */
+
+exports.unbind = function(el, type, fn, capture){
+  if (el.removeEventListener) {
+    el.removeEventListener(type, fn, capture || false);
+  } else {
+    el.detachEvent('on' + type, fn);
+  }
+  return fn;
+};
+
+});
+require.register("charlottegore-measure/index.js", function(exports, require, module){
+var Measure = function(el){
+
+  this.el = el || {};
+
+  return this;
+
+}
+
+var IEStyles = {
+  "padding-top" : "paddingTop",
+  "padding-bottom" : "paddingBottom",
+  "padding-left" : "paddingLeft",
+  "padding-right" : "paddingRight",
+  "border-top-width" : "borderTopWidth",
+  "border-left-width" : "borderLeftWidth",
+  "border-right-width" : "borderRightWidth",
+  "border-bottom-width" : "borderBottomWidth",
+  "margin-top" : "marginTop",
+  "margin-left" : "marginLeft",
+  "margin-right" : "marginRight",
+  "margin-bottom" : "marginBottom"
+};
+
+var getStyle = function(property, e){
+
+  var val;
+  if(e.currentStyle){
+    
+    val = parseInt( ( e.currentStyle[ IEStyles[ property ] ] ).replace( 'px', '' ), 10 );
+  
+  }else if(window.getComputedStyle){
+
+    val = parseInt( (document.defaultView.getComputedStyle( e, null ).getPropertyValue( property ) ).replace('px', '') ,10 );
+
+  }
+
+  return val;
+
+};
+
+var getBoxDetail = function(e){
+
+  var padding={}, border={}, margin={};
+
+  padding.top = getStyle("padding-top", e);
+  padding.right = getStyle("padding-right", e);
+  padding.bottom = getStyle("padding-bottom", e);
+  padding.left = getStyle("padding-left", e);
+
+  margin.top = getStyle("margin-top", e);
+  margin.right = getStyle("margin-right", e);
+  margin.bottom = getStyle("margin-bottom", e);
+  margin.left = getStyle("margin-left", e);
+
+  border.top = getStyle("border-top-width", e);
+  border.right = getStyle("border-right-width", e);
+  border.bottom = getStyle("border-bottom-width", e);
+  border.left = getStyle("border-left-width", e);
+
+  return{
+    padding: padding,
+    border: border,
+    margin: margin
+  }
+
+};
+
+Measure.prototype = {
+
+  pagePosition : function(){
+
+    var curleft = 0, curtop = 0, e = this.el;
+
+        var m = this.boxDetails().margin;
+
+    if (e.offsetParent) {
+      do {
+        curleft += e.offsetLeft;
+        curtop += e.offsetTop;
+      } while (e = e.offsetParent);
+
+      curleft -= m.left;
+      curtop -= m.top;
+
+      return {x : curleft, y : curtop};
+    }
+
+  },
+
+  innerPosition : function(){
+
+    var m = this.boxDetails().margin;
+
+    var xOffset = m.left;
+    var yOffset = m.top;  
+
+    var curleft = 0, curtop = 0;
+
+    curleft += (el.offsetLeft - xOffset);
+    curtop += (el.offsetTop - yOffset);
+
+    return {x : curleft, y : curtop};
+
+  },
+  
+  boxDetails : function(){
+
+    return getBoxDetail( this.el );
+
+  },
+
+  innerSize : function(){
+
+    var e = this.el;
+
+    var boxDetails = getBoxDetail(e);
+
+    var p = boxDetails.padding;
+    var b = boxDetails.border;
+
+    var xOffset = p.left + p.right + b.left + b.right;
+    var yOffset = p.top + p.bottom + b.top + b.bottom;
+
+    var x = 0, y = 0;
+    x = (Math.max(el.clientWidth, el.offsetWidth)) - xOffset;
+    y = (Math.max(el.clientHeight, el.offsetHeight)) - yOffset;
+    return {x : x, y : y};
+
+  },
+
+  outerSize : function(){
+
+    var x = 0, y = 0, e = this.el;
+
+    x = Math.max(e.clientWidth, e.offsetWidth);
+    y = Math.max(e.clientHeight, e.offsetHeight);
+
+    return {x : x, y : y};
+
+  },
+
+  screenSize : function(){
+
+    var w = window,
+        d = document,
+        e = d.documentElement,
+        g = d.getElementsByTagName('body')[0],
+        x = w.innerWidth || e.clientWidth || g.clientWidth,
+        y = w.innerHeight|| e.clientHeight|| g.clientHeight;
+
+    return { x : x, y : y}
+
+  }  
+
+};
+
+module.exports = function(el){
+
+  return new Measure(el);
+
+};
+});
 require.register("manuelstofer-each/index.js", function(exports, require, module){
 "use strict";
 
@@ -650,212 +856,6 @@ module.exports = function(element){
 	return new Dollar( element );
 
 }
-
-});
-require.register("charlottegore-measure/index.js", function(exports, require, module){
-var Measure = function(el){
-
-  this.el = el || {};
-
-  return this;
-
-}
-
-var IEStyles = {
-  "padding-top" : "paddingTop",
-  "padding-bottom" : "paddingBottom",
-  "padding-left" : "paddingLeft",
-  "padding-right" : "paddingRight",
-  "border-top-width" : "borderTopWidth",
-  "border-left-width" : "borderLeftWidth",
-  "border-right-width" : "borderRightWidth",
-  "border-bottom-width" : "borderBottomWidth",
-  "margin-top" : "marginTop",
-  "margin-left" : "marginLeft",
-  "margin-right" : "marginRight",
-  "margin-bottom" : "marginBottom"
-};
-
-var getStyle = function(property, e){
-
-  var val;
-  if(e.currentStyle){
-    
-    val = parseInt( ( e.currentStyle[ IEStyles[ property ] ] ).replace( 'px', '' ), 10 );
-  
-  }else if(window.getComputedStyle){
-
-    val = parseInt( (document.defaultView.getComputedStyle( e, null ).getPropertyValue( property ) ).replace('px', '') ,10 );
-
-  }
-
-  return val;
-
-};
-
-var getBoxDetail = function(e){
-
-  var padding={}, border={}, margin={};
-
-  padding.top = getStyle("padding-top", e);
-  padding.right = getStyle("padding-right", e);
-  padding.bottom = getStyle("padding-bottom", e);
-  padding.left = getStyle("padding-left", e);
-
-  margin.top = getStyle("margin-top", e);
-  margin.right = getStyle("margin-right", e);
-  margin.bottom = getStyle("margin-bottom", e);
-  margin.left = getStyle("margin-left", e);
-
-  border.top = getStyle("border-top-width", e);
-  border.right = getStyle("border-right-width", e);
-  border.bottom = getStyle("border-bottom-width", e);
-  border.left = getStyle("border-left-width", e);
-
-  return{
-    padding: padding,
-    border: border,
-    margin: margin
-  }
-
-};
-
-Measure.prototype = {
-
-  pagePosition : function(){
-
-    var curleft = 0, curtop = 0, e = this.el;
-
-        var m = this.boxDetails().margin;
-
-    if (e.offsetParent) {
-      do {
-        curleft += e.offsetLeft;
-        curtop += e.offsetTop;
-      } while (e = e.offsetParent);
-
-      curleft -= m.left;
-      curtop -= m.top;
-
-      return {x : curleft, y : curtop};
-    }
-
-  },
-
-  innerPosition : function(){
-
-    var m = this.boxDetails().margin;
-
-    var xOffset = m.left;
-    var yOffset = m.top;  
-
-    var curleft = 0, curtop = 0;
-
-    curleft += (el.offsetLeft - xOffset);
-    curtop += (el.offsetTop - yOffset);
-
-    return {x : curleft, y : curtop};
-
-  },
-  
-  boxDetails : function(){
-
-    return getBoxDetail( this.el );
-
-  },
-
-  innerSize : function(){
-
-    var e = this.el;
-
-    var boxDetails = getBoxDetail(e);
-
-    var p = boxDetails.padding;
-    var b = boxDetails.border;
-
-    var xOffset = p.left + p.right + b.left + b.right;
-    var yOffset = p.top + p.bottom + b.top + b.bottom;
-
-    var x = 0, y = 0;
-    x = (Math.max(el.clientWidth, el.offsetWidth)) - xOffset;
-    y = (Math.max(el.clientHeight, el.offsetHeight)) - yOffset;
-    return {x : x, y : y};
-
-  },
-
-  outerSize : function(){
-
-    var x = 0, y = 0, e = this.el;
-
-    x = Math.max(e.clientWidth, e.offsetWidth);
-    y = Math.max(e.clientHeight, e.offsetHeight);
-
-    return {x : x, y : y};
-
-  },
-
-  screenSize : function(){
-
-    var w = window,
-        d = document,
-        e = d.documentElement,
-        g = d.getElementsByTagName('body')[0],
-        x = w.innerWidth || e.clientWidth || g.clientWidth,
-        y = w.innerHeight|| e.clientHeight|| g.clientHeight;
-
-    return { x : x, y : y}
-
-  }  
-
-};
-
-module.exports = function(el){
-
-  return new Measure(el);
-
-};
-});
-require.register("component-event/index.js", function(exports, require, module){
-
-/**
- * Bind `el` event `type` to `fn`.
- *
- * @param {Element} el
- * @param {String} type
- * @param {Function} fn
- * @param {Boolean} capture
- * @return {Function}
- * @api public
- */
-
-exports.bind = function(el, type, fn, capture){
-  if (el.addEventListener) {
-    el.addEventListener(type, fn, capture || false);
-  } else {
-    el.attachEvent('on' + type, fn);
-  }
-  return fn;
-};
-
-/**
- * Unbind `el` event `type`'s callback `fn`.
- *
- * @param {Element} el
- * @param {String} type
- * @param {Function} fn
- * @param {Boolean} capture
- * @return {Function}
- * @api public
- */
-
-exports.unbind = function(el, type, fn, capture){
-  if (el.removeEventListener) {
-    el.removeEventListener(type, fn, capture || false);
-  } else {
-    el.detachEvent('on' + type, fn);
-  }
-  return fn;
-};
 
 });
 require.register("component-raf/index.js", function(exports, require, module){
@@ -1998,6 +1998,310 @@ hashChange = new HashChange();
 module.exports = hashChange;
 
 });
+require.register("notebutton/index.js", function(exports, require, module){
+var $ = require('dollar');
+
+var NoteButton = function( onUpdate, lifespan ){
+
+	var self = this;
+	this.on = false;
+
+	this.element = ($().create('li')).addClass('note');
+
+	this.element.bind('click', function(){
+
+		self.element.toggleClass('on');
+		self.on = !self.on;
+		self.element.removeClass('unqueued').removeClass('queued');
+		onUpdate();
+
+	});
+
+	return this;
+
+}
+
+NoteButton.prototype = {
+	resize : function( size ){
+		this.size = size;
+		this.element.css({
+			width : size - 2,
+			height : size -2 
+		});
+		return this;
+	},
+	move : function( x, y ){
+		this.element.css({
+			left : x,
+			top : y
+		});
+		return this;
+	},
+	addClass : function( className ){
+		this.element.addClass( className );
+		return this;
+
+	},
+	removeClass : function( className ){
+		this.element.removeClass( className );
+		return this;
+	},
+	toggleClass : function( className ){
+		this.element.toggleClass( className );
+		return this;
+	},
+	appendTo : function( el ){
+		this.element.appendTo( el );
+		return this;		
+	}
+}
+
+
+module.exports.NoteButton = function( onUpdate, lifespan ){
+
+	return new NoteButton( onUpdate, lifespan )
+
+}
+
+
+});
+require.register("monome-synth/index.js", function(exports, require, module){
+window.$ = require('dollar');
+
+var measure = require('measure'),
+	tick = require('tick'),
+	pageVis = require('page-visibility'),
+	lzw = require('lzw'),
+	events = require('event'),
+	noteButton = require("notebutton").NoteButton,
+	voice = require("voice").Voice,
+
+	freqs = [1244.51, 1108.73, 932.33, 830.61, 740.00, 622.25, 554.37, 466.16, 415.30, 370.00, 311.13, 277.18, 233.08, 207.65, 185.00, 155.56, 138.59, 116.54, 103.83, 92.50],
+
+	ctx,
+	bpm,
+	waveform = require("voice").SINE,
+	mixer;
+
+var Monome = function( webkitAudioContext, mixer, bpm ){
+
+	var self = this;
+
+	ctx = webkitAudioContext;
+	mixer = mixer;
+	bpm = bpm;
+
+	this.rows = [];
+	this.voices = [];
+
+	window.rows = this.rows;
+
+	this.oscillators = [];
+
+	this.container = ($().create('ul')).addClass('monome');
+
+	($().getBody()).append( this.container ) ;
+
+	for(var i = 0; i < 16; i++){
+
+		// create an array of rows to hold our columns
+		var arr = [];
+		this.rows.push(arr);
+
+		// create a new voice, while we're in a 0-15 loop. 
+
+		var v = voice(ctx, mixer)
+		v.setBPM( bpm )
+		v.frequency(freqs[i + 2])
+		v.waveform(waveform);
+
+		this.voices.push( v );
+
+		var ul = $().create('ul');
+
+		ul.addClass('col');
+
+		for(var j = 0; j < 16; j++){
+
+			var button = noteButton( function(){
+
+				self.updateCode();
+
+			});
+
+			button
+				.appendTo( ul )
+
+			arr.push(button);
+
+		}
+
+		this.container.append(ul);
+	}
+
+	var index = 15;
+	var currentCol = 15;
+
+
+
+	var nextTime = ctx.currentTime + bpm;
+
+	pageVis.onHidden(function(){
+
+		tick.pause();
+
+		self.voices.forEach(function(voice){
+
+			voice.stop();
+
+		})
+
+	});
+
+	pageVis.onVisible(function(){
+
+		nextTime = ctx.currentTime + bpm;
+		tick.resume();
+
+	});
+
+	tick.add(function(elapsed, stop){
+		var currentTime = ctx.currentTime;		
+		if(currentTime > nextTime){
+
+			var trigger = nextTime - currentTime + 0.1;
+
+			for(var i = 0; i < 16; i++){
+
+				self.rows[index % 16][i].removeClass('sweep');	
+			}
+
+			index++;
+
+			var notesOn=0;
+
+			for(var i = 0; i < 16; i++){
+				self.rows[index % 16][i].addClass('sweep');
+
+				if(self.rows[index % 16][i].on === true){
+					notesOn ++;
+					//self.rows[index % 16][i].play(nextTime + 0.1);					
+				}				
+			}
+
+			for(var i = 0; i < 16; i++){
+
+				if(self.rows[index % 16][i].on === true){
+					self.voices[i].gain( Math.cos((1 - (1 / (notesOn ))) * (1 / (notesOn )) * Math.PI) * 0.15 ).play(nextTime + 0.1);	
+					self.rows[index % 16][i].removeClass('queued');				
+				}	
+
+				if(self.rows[(index + 1) % 16][i].on === true){
+					self.rows[(index + 1) % 16][i].addClass('queued');		
+				}
+
+
+			}
+
+			nextTime = nextTime + bpm;
+
+		}
+
+
+	});
+
+	//self.oscillators[0].noteOn(0);
+	//self.oscillators[1].noteOn(0);
+	//self.oscillators[2].noteOn(0);
+	//self.oscillators[3].noteOn(0);
+
+	return this;
+
+}
+
+Monome.prototype = {
+	updateCode : function( callback ){
+
+		if(callback){
+
+		}else{
+			var str = "";
+			for(var i = 0; i < 16; i++){
+
+				for(var j= 0; j < 16; j++){
+
+					if(this.rows[i][j].on){
+
+						str += "1";
+					}else{
+						str += "0";
+
+					}
+
+				}
+
+			}
+
+			//hashChange.updateHash('!song=' + lzw.compressToBase64(str));
+
+		}
+
+	},
+	resize : function( ss ){
+
+		var cubeSize = Math.floor(ss.y / 16);
+
+		for(var i = 0; i < 16; i++){
+			for(var j = 0; j < 16; j++){
+				this.rows[i][j]
+					.resize( Math.floor(cubeSize * 0.90) )
+					.move( i * cubeSize , j * cubeSize )
+			}
+
+		}
+
+		return this;
+
+	}, 
+	move : function( pos ){
+
+		this.container.css({
+			position: 'absolute',
+			top : pos.y,
+			left : pos.x
+
+		});
+
+		return this;
+
+
+	},
+	waveform : function( waveform ){
+		for(var i = 0; i < 16; i++){
+			this.voices[i].waveform(waveform);
+		}
+		return this;
+
+	},
+	useCode : function( code ){
+
+
+	},
+	glide : function(  ){
+		for(var i = 0; i < 16; i++){
+			this.voices[i].toggleGlide();
+		}
+		return this;
+
+	}
+}
+
+module.exports.Monome = function( webkitAudioContext, mixer, bpm ){
+
+	return new Monome( webkitAudioContext, mixer, bpm );
+
+}
+});
 require.register("charlottegore-easing/index.js", function(exports, require, module){
 var Bezier = require('bezier');
 
@@ -2898,15 +3202,17 @@ module.exports.Tweening = function( config ){
 });
 require.register("voice/index.js", function(exports, require, module){
 var ctx;
-var bpm = 0.5; // a worth default 
 
-var Voice = function( webAudioContext ){
+
+var Voice = function( webAudioContext , mixer ){
 
 	var self = this;
 
 	ctx = webAudioContext;
 
 	//this.frequency = frequency;
+
+	this.bpm = 0.5;
 
 	// create our notes
 	this.filter = ctx.createBiquadFilter(); // low pass filter for getting rid of errant harmonics.
@@ -2928,11 +3234,10 @@ var Voice = function( webAudioContext ){
 	//this.filter.frequency.value = frequency * 2;
 	this.filter.Q.value =0.5 ;
 
-	this.osc.type= waveform;
-	//this.osc.frequency.value = frequency;
 
 	this.rampUpTimeout = -1;
 	this.rampDownTimeout = -1;
+	this.doGlide = false;
 
 	// start the oscillator
 	this.osc.start(ctx.currentTime);
@@ -2945,6 +3250,10 @@ var Voice = function( webAudioContext ){
 Voice.prototype = {
 
 	play : function(startTime){
+
+		var bpm = this.bpm;
+
+		debugger;
 
 		clearTimeout(this.rampDownTimeout);
 		clearTimeout(this.rampUpTimeout);
@@ -2970,10 +3279,12 @@ Voice.prototype = {
 
 		}
 		
-		this.rampUp = require('tween').Tweening({ value: this.envelope.gain.value }).to({ value: 1 }).using('ease-in-expo').duration( (bpm * 1000) / 2).tick(updateEnvelope); //.begin(function(){self.osc.type = self.osc.SINE}).finish(function(){ self.osc.type = self.osc.SINE});
-		this.rampDown = require('tween').Tweening({ value: 1 }).to({ value: 0 }).using('linear').duration( Math.round( (bpm * 1000) * 0.9) ).tick(updateEnvelope); // .begin(function(){self.osc.type = self.osc.SINE});
-		this.glide = require('tween').Tweening({ value: -600 }).to({ value: 0}).using('linear').duration( (bpm * 1000) / 20 ).tick(function(o){self.osc.detune.value = o.value;});
-
+		this.rampUp = require('tween').Tweening({ value: this.envelope.gain.value }).to({ value: 1 }).using('ease-in').duration(  Math.round( (bpm * 1000) / 2) ).tick(updateEnvelope); //.begin(function(){self.osc.type = self.osc.SINE}).finish(function(){ self.osc.type = self.osc.SINE});
+		this.rampDown = require('tween').Tweening({ value: 1 }).to({ value: 0 }).using('ease-out').duration( Math.round( (bpm * 1000 * 2))).tick(updateEnvelope); // .begin(function(){self.osc.type = self.osc.SINE});
+		
+		if(this.doGlide){
+			this.glide = require('tween').Tweening({ value: -600 }).to({ value: 0}).using('linear').duration( Math.round( (bpm * 1000) / 20) ).tick(function(o){self.osc.detune.value = o.value;});
+		}
 
 		this.rampUpTimeout = setTimeout(function(){
 
@@ -2981,12 +3292,14 @@ Voice.prototype = {
 			self.glide.play();
 
 		}, start );
+
+		debugger;
 		
 		this.rampDownTimeout = setTimeout(function(){
 
 			self.rampDown.play();
 
-		}, start + 440);
+		}, start + Math.round((bpm * 1000 * 0.8)));
 
 		return this;
 
@@ -3038,9 +3351,14 @@ Voice.prototype = {
 		this.filter.frequency.value = frequency * 2;
 		return this;
 	},
-	bpm : function( beatsPerMinute ){
-		bpm = beatsPerMinute;
+	setBPM : function( beatsPerMinute ){
+		this.bpm = beatsPerMinute;
 		return this;
+	},
+	toggleGlide : function(){
+		this.doGlide = true;
+		return this;
+
 	}
 
 
@@ -3057,222 +3375,116 @@ module.exports.SQUARE = 1;
 module.exports.SAWTOOTH = 2;
 module.exports.TRIANGLE = 3;
 });
-require.register("noteButton/index.js", function(exports, require, module){
-var $ = require('dollar');
-
-var NoteButton = function( onUpdate, lifespan ){
-
-	var self = this;
-	this.on = false;
-
-	this.element = ($().create('li')).addClass('note');
-
-	this.element.bind('click', function(){
-
-		self.element.toggleClass('on');
-		self.on = !self.on;
-		self.element.removeClass('unqueued').removeClass('queued');
-		onUpdate();
-
-	});
-
-	return this;
-
-}
-
-NoteButton.prototype = {
-	resize : function( size ){
-		this.size = size;
-		this.element.css({
-			width : size - 2,
-			height : size -2 
-		});
-		return this;
-	},
-	move : function( x, y ){
-		this.element.css({
-			left : x,
-			top : y
-		});
-		return this;
-	},
-	addClass : function( className ){
-		this.element.addClass( className );
-		return this;
-
-	},
-	removeClass : function( className ){
-		this.element.removeClass( className );
-		return this;
-	},
-	toggleClass : function( className ){
-		this.element.toggleClass( className );
-		return this;
-	},
-	appendTo : function( el ){
-		this.element.appendTo( el );
-		return this;		
-	}
-}
-
-
-module.exports.NoteButton = function( onUpdate, lifespan ){
-
-	return new NoteButton( onUpdate, lifespan )
-
-}
-
-
-});
 require.register("monome/index.js", function(exports, require, module){
-window.$ = require('dollar');
+module.exports = function(){
 
-var measure = require('measure'),
-	tick = require('tick'),
-	pageVis = require('page-visibility'),
-	lzw = require('lzw'),
-	hashChange = require('hashchange'),
-	events = require('event'),
-	noteButton = require("notebutton").NoteButton,
-	voice = require("voice").Voice,
+		var ctx = new webkitAudioContext(),
+			bpm = 0.2,
 
-	freqs = [1244.51, 1108.73, 932.33, 830.61, 740.00, 622.25, 554.37, 466.16, 415.30, 370.00, 311.13, 277.18, 233.08, 207.65, 185.00, 155.56, 138.59, 116.54, 103.83, 92.50],
+			ref = ctx.createOscillator(),
+			waveform = require("voice").SINE,
+			mixerA = ctx.createChannelMerger(16),
+			mixerB = ctx.createChannelMerger(16);
+ 
+		var gainA = ctx.createGain();
+		var gainB = ctx.createGain();
 
-	ctx,
-	bpm,
-	waveform = require("voice").SINE,
-	mixer;
+		gainA.gain.value = 0.7//Math.cos(0.5 * 0.5* Math.PI);
+  		gainB.gain.value = 1.3//Math.cos((1.0 - 0.5) * 0.5* Math.PI);
 
-var Monome = function( webkitAudioContext, mixer, bpm ){
+  		ref.connect(ctx.destination);
+		mixerA.connect(gainA);
+		mixerB.connect(gainB);
 
-	var self = this;
+		gainA.connect(ctx.destination);
+		gainB.connect(ctx.destination);
 
-	ctx = webkitAudioContext;
-	mixer = mixer;
-	bpm = bpm;
 
-	this.rows = [];
-	this.voices = [];
+		var events = require('event');
+		var measure = require('measure');
 
-	window.rows = this.rows;
 
-	this.oscillators = [];
+		var template = function(str, obj){
 
-	var screenSize = measure().screenSize();
+			var candidates = str.match(/<%=([A-Za-z0-9\-\_\.]+)%>/g);
 
-	
 
-	this.container = ($().create('ul')).addClass('monome');
+			candidates.forEach(function( match ){
 
-	($().getBody()).append( this.container ) ;
+				var name = match.replace(/<%=/, ''); name = name.replace(/%>/, '');
+				if(obj[name]){
 
-	for(var i = 0; i < 16; i++){
+					str = str.replace(match, obj[name]);
 
-		// create an array of rows to hold our columns
-		var arr = [];
-		this.rows.push(arr);
-
-		// create a new voice, while we're in a 0-15 loop. 
-
-		var v = voice(ctx, freqs[i + 2])
-		v.bpm(bpm)
-		v.frequency(freqs[i + 2])
-		v.waveform(waveform);
-
-		this.voices.push( v );
-
-		var ul = $().create('ul');
-
-		ul.addClass('col');
-
-		for(var j = 0; j < 16; j++){
-
-			var button = noteButton( function(){
-
-				self.updateCode();
+				}
 
 			});
 
-			button
-				.appendTo( ul )
-
-			arr.push(button);
+			return str;
 
 		}
 
-		this.container.append(ul);
-	}
+		var css = {
+			"ul.monome.a li.note" : "-webkit-transition: background <%=sweep%>ms, box-shadow <%=glow%>ms, -webkit-transform 0ms;!important",
+			"ul.monome.a li.note.queued" : "-webkit-transition: -webkit-transform <%=lifespan%>ms, margin-left <%=lifespan%>ms, background <%=lifespan%>ms;!important",
+			"ul.monome.a li.note.sweep.on" : "-webkit-transition: -webkit-transform <%=lifespan%>ms, background 0ms;!important",
+			"ul.monome.b li.note" : "-webkit-transition: background <%=sweep%>ms, box-shadow <%=glowB%>ms, -webkit-transform 0ms;!important",
+			"ul.monome.b li.note.queued" : "-webkit-transition: -webkit-transform <%=lifespanB%>ms, margin-left <%=lifespanB%>ms, background <%=lifespanB%>ms;!important",
+			"ul.monome.b li.note.sweep.on" : "-webkit-transition: -webkit-transform <%=lifespanB%>ms, background 0ms;!important" 
+		}
 
-	var index = 15;
-	var currentCol = 15;
+		var data = {
+			lifespan : (bpm * 1000),
+			sweep : (bpm * 1000),
+			glow : (bpm * 1000) / 2,
+			lifespanB : (bpm * 8 * 1000),
+			sweepB : (bpm * 8 * 1000) * 2,
+			glowB : (bpm * 8 * 1000) / 2,				
+		}
 
+		var sheet = document.styleSheets[document.styleSheets.length -1];
 
+		for(var rule in css){
 
-	var nextTime = ctx.currentTime + bpm;
-
-	pageVis.onHidden(function(){
-
-		tick.pause();
-
-		self.voices.forEach(function(voice){
-
-			voice.stop();
-
-		})
-
-	});
-
-	pageVis.onVisible(function(){
-
-		nextTime = ctx.currentTime + bpm;
-		tick.resume();
-
-	});
-
-	tick.add(function(elapsed, stop){
-		var currentTime = ctx.currentTime;		
-		if(currentTime > nextTime){
-
-			var trigger = nextTime - currentTime + 0.1;
-
-			for(var i = 0; i < 16; i++){
-
-				self.rows[index % 16][i].removeClass('sweep');	
+			if(css.hasOwnProperty(rule)){
+				sheet.insertRule( rule + "{" + template(css[rule], data)+ "}", sheet.cssRules.length);
 			}
-
-			index++;
-
-			var notesOn=0;
-
-			for(var i = 0; i < 16; i++){
-				self.rows[index % 16][i].addClass('sweep');
-
-				if(self.rows[index % 16][i].on === true){
-					notesOn ++;
-					//self.rows[index % 16][i].play(nextTime + 0.1);					
-				}				
-			}
-
-			for(var i = 0; i < 16; i++){
-
-				if(self.rows[index % 16][i].on === true){
-					self.voices[i].gain( Math.cos((1 - (1 / (notesOn ))) * (1 / (notesOn )) * Math.PI) * 0.15 ).play(nextTime + 0.1);	
-					self.rows[index % 16][i].removeClass('queued');				
-				}	
-
-				if(self.rows[(index + 1) % 16][i].on === true){
-					self.rows[(index + 1) % 16][i].addClass('queued');		
-				}
-
-
-			}
-
-			nextTime = nextTime + bpm;
 
 		}
 
 
-	});
+
+
+		var monomeA = require('monome-synth').Monome(ctx, mixerA, bpm).glide();
+		var monomeB = require('monome-synth').Monome(ctx, mixerB, bpm * 8).waveform(ref.SAWTOOTH).glide();
+
+		monomeA.container.addClass('a');
+		monomeB.container.addClass('b')
+
+
+		var resize = function(){
+
+			var ss = measure().screenSize();
+
+			var width = Math.min(ss.x * 0.8 / 2, ss.y * 0.8);
+
+			monomeA
+				.resize({ x : width, y : width })
+				.move({ x : ss.x * 0.1 , y : ss.y * 0.1 });
+
+			monomeB
+				.resize({ x : width, y : width })
+				.move({ x : (ss.x / 2) , y : ss.y * 0.1 });
+
+		}
+
+		events.bind(window, "resize", resize);
+
+		resize();
+
+}
+
+/*
 
 	hashChange.update(function(frag){
 
@@ -3301,83 +3513,15 @@ var Monome = function( webkitAudioContext, mixer, bpm ){
 
 	}).update();
 
-	events.bind(window, "resize", function(){
 
-		self.resize();
-
-	});
-
-	self.resize();
-
-	//self.oscillators[0].noteOn(0);
-	//self.oscillators[1].noteOn(0);
-	//self.oscillators[2].noteOn(0);
-	//self.oscillators[3].noteOn(0);
-
-	return this;
-
-}
-
-Monome.prototype = {
-	updateCode : function(){
-		var str = "";
-		for(var i = 0; i < 16; i++){
-
-			for(var j= 0; j < 16; j++){
-
-				if(this.rows[i][j].on){
-
-					str += "1";
-				}else{
-					str += "0";
-
-				}
-
-			}
-
-		}
-
-		hashChange.updateHash('!song=' + lzw.compressToBase64(str));
-
-	},
-	resize : function(){
-
-		var ss = measure().screenSize();
-		var cubeSize = Math.floor((ss.y - 100) / 16);
-
-		this.container.css({
-			position: 'absolute',
-			top : 50,
-			left: ss.x / 2 - (cubeSize * 8)			
-		});
-		
-
-		for(var i = 0; i < 16; i++){
-			for(var j = 0; j < 16; j++){
-				this.rows[i][j]
-					.resize( Math.floor(cubeSize * 0.90) )
-					.move( i * cubeSize , j * cubeSize )
-			}
-
-		}
-
-		return this;
-
-	}, 
-	move : function(){
-
-
-
-	}
-}
-
-module.exports.Monome = function( webkitAudioContext, mixer, bpm ){
-
-	return new Monome( webkitAudioContext, mixer, bpm );
-
-}
+*/
 });
-require.alias("charlottegore-dollar/index.js", "monome/deps/dollar/index.js");
+require.alias("component-event/index.js", "monome/deps/event/index.js");
+
+require.alias("charlottegore-measure/index.js", "monome/deps/measure/index.js");
+
+require.alias("monome-synth/index.js", "monome/deps/monome-synth/index.js");
+require.alias("charlottegore-dollar/index.js", "monome-synth/deps/dollar/index.js");
 require.alias("manuelstofer-each/index.js", "charlottegore-dollar/deps/each/index.js");
 
 require.alias("component-classes/index.js", "charlottegore-dollar/deps/classes/index.js");
@@ -3385,21 +3529,53 @@ require.alias("component-indexof/index.js", "component-classes/deps/indexof/inde
 
 require.alias("component-event/index.js", "charlottegore-dollar/deps/event/index.js");
 
-require.alias("charlottegore-measure/index.js", "monome/deps/measure/index.js");
+require.alias("charlottegore-measure/index.js", "monome-synth/deps/measure/index.js");
 
-require.alias("component-event/index.js", "monome/deps/event/index.js");
+require.alias("component-event/index.js", "monome-synth/deps/event/index.js");
 
-require.alias("charlottegore-tick/index.js", "monome/deps/tick/index.js");
+require.alias("charlottegore-tick/index.js", "monome-synth/deps/tick/index.js");
 require.alias("component-raf/index.js", "charlottegore-tick/deps/raf/index.js");
 
-require.alias("charlottegore-page-visibility/index.js", "monome/deps/page-visibility/index.js");
+require.alias("charlottegore-page-visibility/index.js", "monome-synth/deps/page-visibility/index.js");
 
-require.alias("charlottegore-lzw/index.js", "monome/deps/lzw/index.js");
+require.alias("charlottegore-lzw/index.js", "monome-synth/deps/lzw/index.js");
 
-require.alias("charlottegore-hashchange/index.js", "monome/deps/hashchange/index.js");
+require.alias("charlottegore-hashchange/index.js", "monome-synth/deps/hashchange/index.js");
 require.alias("manuelstofer-each/index.js", "charlottegore-hashchange/deps/each/index.js");
 
 require.alias("component-indexof/index.js", "charlottegore-hashchange/deps/indexof/index.js");
+
+require.alias("notebutton/index.js", "monome-synth/deps/notebutton/index.js");
+require.alias("charlottegore-dollar/index.js", "notebutton/deps/dollar/index.js");
+require.alias("manuelstofer-each/index.js", "charlottegore-dollar/deps/each/index.js");
+
+require.alias("component-classes/index.js", "charlottegore-dollar/deps/classes/index.js");
+require.alias("component-indexof/index.js", "component-classes/deps/indexof/index.js");
+
+require.alias("component-event/index.js", "charlottegore-dollar/deps/event/index.js");
+
+require.alias("voice/index.js", "monome-synth/deps/voice/index.js");
+require.alias("charlottegore-tween/index.js", "voice/deps/tween/index.js");
+require.alias("charlottegore-easing/index.js", "charlottegore-tween/deps/easing/index.js");
+require.alias("charlottegore-bezier/index.js", "charlottegore-easing/deps/bezier/index.js");
+require.alias("charlottegore-binary-search/index.js", "charlottegore-bezier/deps/binary-search/index.js");
+
+require.alias("manuelstofer-is/index.js", "charlottegore-tween/deps/is/index.js");
+require.alias("manuelstofer-each/index.js", "manuelstofer-is/deps/each/index.js");
+
+require.alias("manuelstofer-each/index.js", "charlottegore-tween/deps/each/index.js");
+
+require.alias("charlottegore-parse-duration/index.js", "charlottegore-tween/deps/parse-duration/index.js");
+require.alias("manuelstofer-is/index.js", "charlottegore-parse-duration/deps/is/index.js");
+require.alias("manuelstofer-each/index.js", "manuelstofer-is/deps/each/index.js");
+
+require.alias("charlottegore-tick/index.js", "charlottegore-tween/deps/tick/index.js");
+require.alias("component-raf/index.js", "charlottegore-tick/deps/raf/index.js");
+
+require.alias("charlottegore-color-parser/index.js", "charlottegore-tween/deps/color-parser/index.js");
+
+require.alias("charlottegore-bezier/index.js", "charlottegore-tween/deps/bezier/index.js");
+require.alias("charlottegore-binary-search/index.js", "charlottegore-bezier/deps/binary-search/index.js");
 
 require.alias("voice/index.js", "monome/deps/voice/index.js");
 require.alias("charlottegore-tween/index.js", "voice/deps/tween/index.js");
@@ -3423,13 +3599,4 @@ require.alias("charlottegore-color-parser/index.js", "charlottegore-tween/deps/c
 
 require.alias("charlottegore-bezier/index.js", "charlottegore-tween/deps/bezier/index.js");
 require.alias("charlottegore-binary-search/index.js", "charlottegore-bezier/deps/binary-search/index.js");
-
-require.alias("noteButton/index.js", "monome/deps/notebutton/index.js");
-require.alias("charlottegore-dollar/index.js", "noteButton/deps/dollar/index.js");
-require.alias("manuelstofer-each/index.js", "charlottegore-dollar/deps/each/index.js");
-
-require.alias("component-classes/index.js", "charlottegore-dollar/deps/classes/index.js");
-require.alias("component-indexof/index.js", "component-classes/deps/indexof/index.js");
-
-require.alias("component-event/index.js", "charlottegore-dollar/deps/event/index.js");
 

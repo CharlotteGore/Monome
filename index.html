@@ -8,74 +8,7 @@
 	<p class="copy">The Javascript Web Audio Monome. Click cubes. Wait for light to sweep past. &copy; 2013 Charlotte Gore</p>
 	<script type="text/javascript" src="monome.js"></script>
 	<script>
-
-		var ctx = new webkitAudioContext(),
-			bpm = 0.2,
-
-			ref = ctx.createOscillator(),
-			waveform = require("voice").SINE,
-			mixer = ctx.createChannelMerger(16);
-
-
-		var template = function(str, obj){
-
-			var candidates = str.match(/<%=([A-Za-z0-9\-\_\.]+)%>/g);
-
-
-			candidates.forEach(function( match ){
-
-				var name = match.replace(/<%=/, ''); name = name.replace(/%>/, '');
-				if(obj[name]){
-
-					str = str.replace(match, obj[name]);
-
-				}
-
-			});
-
-			return str;
-
-		}
-
-
-
-		var css = {
-			"ul.monome li.note" : "-webkit-transition: background <%=sweep%>ms, box-shadow <%=glow%>ms, -webkit-transform 0ms;!important",
-			"ul.monome li.note.queued" : "-webkit-transition: -webkit-transform <%=lifespan%>ms, margin-left <%=lifespan%>ms, background <%=lifespan%>ms;!important",
-			"ul.monome li.note.sweep.on" : "-webkit-transition: -webkit-transform <%=lifespan%>ms, background 0ms;!important" 
-		}
-
-		var data = {
-			lifespan : (bpm * 1000),
-			sweep : (bpm * 1000) * 2,
-			glow : (bpm * 1000) / 2			
-		}
-
-		var sheet = document.styleSheets[document.styleSheets.length -1];
-
-		for(var rule in css){
-
-			if(css.hasOwnProperty(rule)){
-				sheet.insertRule( rule + "{" + template(css[rule], data)+ "}", sheet.cssRules.length);
-			}
-
-		}
-
-
-		ref.connect(ctx.destination);
-		mixer.connect(ctx.destination);
-
-		require('monome').Monome(ctx, mixer, bpm);
+	require('monome')();
 	</script>
 </body>
 </html>
-
-	lifespan : function( lifespan ){
-
-		for(var rule in css){
-			if(css.hasOwnProperty(rule)){
-				console.log()
-			}
-
-		}
-	}

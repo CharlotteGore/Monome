@@ -5,21 +5,19 @@
   "version": "0.0.1",
   "keywords": [],
   "dependencies": {
-    "charlottegore/dollar": "*",
-    "charlottegore/measure": "*",
     "component/event": "*",
-    "charlottegore/tick": "*",
-    "charlottegore/page-visibility": "*",
-    "charlottegore/lzw" : "*",
-    "charlottegore/hashchange" : "*"
+    "charlottegore/measure": "*"
   },
   "development": {},
   "license": "MIT",
   "scripts": [
     "index.js"
   ],
-  "local" : [
-    "voice", "noteButton"
+  "local": [
+    "monome-synth",
+    "voice"
   ],
-  "paths" : ["./local"]
+  "paths": [
+    "./local"
+  ]
 }

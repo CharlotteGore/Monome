@@ -1,151 +1,112 @@
-window.$ = require('dollar');
+module.exports = function(){
 
-var measure = require('measure'),
-	tick = require('tick'),
-	pageVis = require('page-visibility'),
-	lzw = require('lzw'),
-	hashChange = require('hashchange'),
-	events = require('event'),
-	noteButton = require("notebutton").NoteButton,
-	voice = require("voice").Voice,
+		var ctx = new webkitAudioContext(),
+			bpm = 0.2,
 
-	freqs = [1244.51, 1108.73, 932.33, 830.61, 740.00, 622.25, 554.37, 466.16, 415.30, 370.00, 311.13, 277.18, 233.08, 207.65, 185.00, 155.56, 138.59, 116.54, 103.83, 92.50],
+			ref = ctx.createOscillator(),
+			waveform = require("voice").SINE,
+			mixerA = ctx.createChannelMerger(16),
+			mixerB = ctx.createChannelMerger(16);
+ 
+		var gainA = ctx.createGain();
+		var gainB = ctx.createGain();
 
-	ctx,
-	bpm,
-	waveform = require("voice").SINE,
-	mixer;
+		gainA.gain.value = 0.7//Math.cos(0.5 * 0.5* Math.PI);
+  		gainB.gain.value = 1.3//Math.cos((1.0 - 0.5) * 0.5* Math.PI);
 
-var Monome = function( webkitAudioContext, mixer, bpm ){
+  		ref.connect(ctx.destination);
+		mixerA.connect(gainA);
+		mixerB.connect(gainB);
 
-	var self = this;
+		gainA.connect(ctx.destination);
+		gainB.connect(ctx.destination);
 
-	ctx = webkitAudioContext;
-	mixer = mixer;
-	bpm = bpm;
 
-	this.rows = [];
-	this.voices = [];
+		var events = require('event');
+		var measure = require('measure');
 
-	window.rows = this.rows;
 
-	this.oscillators = [];
+		var template = function(str, obj){
 
-	var screenSize = measure().screenSize();
+			var candidates = str.match(/<%=([A-Za-z0-9\-\_\.]+)%>/g);
 
-	
 
-	this.container = ($().create('ul')).addClass('monome');
+			candidates.forEach(function( match ){
 
-	($().getBody()).append( this.container ) ;
+				var name = match.replace(/<%=/, ''); name = name.replace(/%>/, '');
+				if(obj[name]){
 
-	for(var i = 0; i < 16; i++){
+					str = str.replace(match, obj[name]);
 
-		// create an array of rows to hold our columns
-		var arr = [];
-		this.rows.push(arr);
-
-		// create a new voice, while we're in a 0-15 loop. 
-
-		var v = voice(ctx, freqs[i + 2])
-		v.bpm(bpm)
-		v.frequency(freqs[i + 2])
-		v.waveform(waveform);
-
-		this.voices.push( v );
-
-		var ul = $().create('ul');
-
-		ul.addClass('col');
-
-		for(var j = 0; j < 16; j++){
-
-			var button = noteButton( function(){
-
-				self.updateCode();
+				}
 
 			});
 
-			button
-				.appendTo( ul )
-
-			arr.push(button);
+			return str;
 
 		}
 
-		this.container.append(ul);
-	}
+		var css = {
+			"ul.monome.a li.note" : "-webkit-transition: background <%=sweep%>ms, box-shadow <%=glow%>ms, -webkit-transform 0ms;!important",
+			"ul.monome.a li.note.queued" : "-webkit-transition: -webkit-transform <%=lifespan%>ms, margin-left <%=lifespan%>ms, background <%=lifespan%>ms;!important",
+			"ul.monome.a li.note.sweep.on" : "-webkit-transition: -webkit-transform <%=lifespan%>ms, background 0ms;!important",
+			"ul.monome.b li.note" : "-webkit-transition: background <%=sweep%>ms, box-shadow <%=glowB%>ms, -webkit-transform 0ms;!important",
+			"ul.monome.b li.note.queued" : "-webkit-transition: -webkit-transform <%=lifespanB%>ms, margin-left <%=lifespanB%>ms, background <%=lifespanB%>ms;!important",
+			"ul.monome.b li.note.sweep.on" : "-webkit-transition: -webkit-transform <%=lifespanB%>ms, background 0ms;!important" 
+		}
 
-	var index = 15;
-	var currentCol = 15;
+		var data = {
+			lifespan : (bpm * 1000),
+			sweep : (bpm * 1000),
+			glow : (bpm * 1000) / 2,
+			lifespanB : (bpm * 8 * 1000),
+			sweepB : (bpm * 8 * 1000) * 2,
+			glowB : (bpm * 8 * 1000) / 2,				
+		}
 
+		var sheet = document.styleSheets[document.styleSheets.length -1];
 
+		for(var rule in css){
 
-	var nextTime = ctx.currentTime + bpm;
-
-	pageVis.onHidden(function(){
-
-		tick.pause();
-
-		self.voices.forEach(function(voice){
-
-			voice.stop();
-
-		})
-
-	});
-
-	pageVis.onVisible(function(){
-
-		nextTime = ctx.currentTime + bpm;
-		tick.resume();
-
-	});
-
-	tick.add(function(elapsed, stop){
-		var currentTime = ctx.currentTime;		
-		if(currentTime > nextTime){
-
-			var trigger = nextTime - currentTime + 0.1;
-
-			for(var i = 0; i < 16; i++){
-
-				self.rows[index % 16][i].removeClass('sweep');	
+			if(css.hasOwnProperty(rule)){
+				sheet.insertRule( rule + "{" + template(css[rule], data)+ "}", sheet.cssRules.length);
 			}
-
-			index++;
-
-			var notesOn=0;
-
-			for(var i = 0; i < 16; i++){
-				self.rows[index % 16][i].addClass('sweep');
-
-				if(self.rows[index % 16][i].on === true){
-					notesOn ++;
-					//self.rows[index % 16][i].play(nextTime + 0.1);					
-				}				
-			}
-
-			for(var i = 0; i < 16; i++){
-
-				if(self.rows[index % 16][i].on === true){
-					self.voices[i].gain( Math.cos((1 - (1 / (notesOn ))) * (1 / (notesOn )) * Math.PI) * 0.15 ).play(nextTime + 0.1);	
-					self.rows[index % 16][i].removeClass('queued');				
-				}	
-
-				if(self.rows[(index + 1) % 16][i].on === true){
-					self.rows[(index + 1) % 16][i].addClass('queued');		
-				}
-
-
-			}
-
-			nextTime = nextTime + bpm;
 
 		}
 
 
-	});
+
+
+		var monomeA = require('monome-synth').Monome(ctx, mixerA, bpm).glide();
+		var monomeB = require('monome-synth').Monome(ctx, mixerB, bpm * 8).waveform(ref.SAWTOOTH).glide();
+
+		monomeA.container.addClass('a');
+		monomeB.container.addClass('b')
+
+
+		var resize = function(){
+
+			var ss = measure().screenSize();
+
+			var width = Math.min(ss.x * 0.8 / 2, ss.y * 0.8);
+
+			monomeA
+				.resize({ x : width, y : width })
+				.move({ x : ss.x * 0.1 , y : ss.y * 0.1 });
+
+			monomeB
+				.resize({ x : width, y : width })
+				.move({ x : (ss.x / 2) , y : ss.y * 0.1 });
+
+		}
+
+		events.bind(window, "resize", resize);
+
+		resize();
+
+}
+
+/*
 
 	hashChange.update(function(frag){
 
@@ -174,78 +135,5 @@ var Monome = function( webkitAudioContext, mixer, bpm ){
 
 	}).update();
 
-	events.bind(window, "resize", function(){
 
-		self.resize();
-
-	});
-
-	self.resize();
-
-	//self.oscillators[0].noteOn(0);
-	//self.oscillators[1].noteOn(0);
-	//self.oscillators[2].noteOn(0);
-	//self.oscillators[3].noteOn(0);
-
-	return this;
-
-}
-
-Monome.prototype = {
-	updateCode : function(){
-		var str = "";
-		for(var i = 0; i < 16; i++){
-
-			for(var j= 0; j < 16; j++){
-
-				if(this.rows[i][j].on){
-
-					str += "1";
-				}else{
-					str += "0";
-
-				}
-
-			}
-
-		}
-
-		hashChange.updateHash('!song=' + lzw.compressToBase64(str));
-
-	},
-	resize : function(){
-
-		var ss = measure().screenSize();
-		var cubeSize = Math.floor((ss.y - 100) / 16);
-
-		this.container.css({
-			position: 'absolute',
-			top : 50,
-			left: ss.x / 2 - (cubeSize * 8)			
-		});
-		
-
-		for(var i = 0; i < 16; i++){
-			for(var j = 0; j < 16; j++){
-				this.rows[i][j]
-					.resize( Math.floor(cubeSize * 0.90) )
-					.move( i * cubeSize , j * cubeSize )
-			}
-
-		}
-
-		return this;
-
-	}, 
-	move : function(){
-
-
-
-	}
-}
-
-module.exports.Monome = function( webkitAudioContext, mixer, bpm ){
-
-	return new Monome( webkitAudioContext, mixer, bpm );
-
-}
+*/

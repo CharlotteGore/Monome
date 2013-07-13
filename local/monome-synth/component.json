@@ -1,0 +1,25 @@
+{
+  "name": "monome-synth",
+  "repo": "charlottegore/monome-synth",
+  "description": "the monome",
+  "version": "0.0.1",
+  "keywords": [],
+  "dependencies": {
+    "charlottegore/dollar": "*",
+    "charlottegore/measure": "*",
+    "component/event": "*",
+    "charlottegore/tick": "*",
+    "charlottegore/page-visibility": "*",
+    "charlottegore/lzw" : "*",
+    "charlottegore/hashchange" : "*"
+    },
+  "development": {},
+  "license": "MIT",
+  "scripts": [
+    "index.js"
+  ],
+  "paths" : [
+    ".."
+  ],
+  "local" : ["notebutton", "voice"]
+}

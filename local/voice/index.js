@@ -1,13 +1,15 @@
 var ctx;
-var bpm = 0.5; // a worth default 
 
-var Voice = function( webAudioContext ){
+
+var Voice = function( webAudioContext , mixer ){
 
 	var self = this;
 
 	ctx = webAudioContext;
 
 	//this.frequency = frequency;
+
+	this.bpm = 0.5;
 
 	// create our notes
 	this.filter = ctx.createBiquadFilter(); // low pass filter for getting rid of errant harmonics.
@@ -29,11 +31,10 @@ var Voice = function( webAudioContext ){
 	//this.filter.frequency.value = frequency * 2;
 	this.filter.Q.value =0.5 ;
 
-	this.osc.type= waveform;
-	//this.osc.frequency.value = frequency;
 
 	this.rampUpTimeout = -1;
 	this.rampDownTimeout = -1;
+	this.doGlide = false;
 
 	// start the oscillator
 	this.osc.start(ctx.currentTime);
@@ -46,6 +47,10 @@ var Voice = function( webAudioContext ){
 Voice.prototype = {
 
 	play : function(startTime){
+
+		var bpm = this.bpm;
+
+		debugger;
 
 		clearTimeout(this.rampDownTimeout);
 		clearTimeout(this.rampUpTimeout);
@@ -71,10 +76,12 @@ Voice.prototype = {
 
 		}
 		
-		this.rampUp = require('tween').Tweening({ value: this.envelope.gain.value }).to({ value: 1 }).using('ease-in-expo').duration( (bpm * 1000) / 2).tick(updateEnvelope); //.begin(function(){self.osc.type = self.osc.SINE}).finish(function(){ self.osc.type = self.osc.SINE});
-		this.rampDown = require('tween').Tweening({ value: 1 }).to({ value: 0 }).using('ease-out-expo').duration( Math.round( (bpm * 1000) * 0.9) ).tick(updateEnvelope); // .begin(function(){self.osc.type = self.osc.SINE});
-		this.glide = require('tween').Tweening({ value: -600 }).to({ value: 0}).using('linear').duration( (bpm * 1000) / 20 ).tick(function(o){self.osc.detune.value = o.value;});
-
+		this.rampUp = require('tween').Tweening({ value: this.envelope.gain.value }).to({ value: 1 }).using('ease-in').duration(  Math.round( (bpm * 1000) / 2) ).tick(updateEnvelope); //.begin(function(){self.osc.type = self.osc.SINE}).finish(function(){ self.osc.type = self.osc.SINE});
+		this.rampDown = require('tween').Tweening({ value: 1 }).to({ value: 0 }).using('ease-out').duration( Math.round( (bpm * 1000 * 2))).tick(updateEnvelope); // .begin(function(){self.osc.type = self.osc.SINE});
+		
+		if(this.doGlide){
+			this.glide = require('tween').Tweening({ value: -600 }).to({ value: 0}).using('linear').duration( Math.round( (bpm * 1000) / 20) ).tick(function(o){self.osc.detune.value = o.value;});
+		}
 
 		this.rampUpTimeout = setTimeout(function(){
 
@@ -82,12 +89,14 @@ Voice.prototype = {
 			self.glide.play();
 
 		}, start );
+
+		debugger;
 		
 		this.rampDownTimeout = setTimeout(function(){
 
 			self.rampDown.play();
 
-		}, start + 440);
+		}, start + Math.round((bpm * 1000 * 0.8)));
 
 		return this;
 
@@ -139,9 +148,14 @@ Voice.prototype = {
 		this.filter.frequency.value = frequency * 2;
 		return this;
 	},
-	bpm : function( beatsPerMinute ){
-		bpm = beatsPerMinute;
+	setBPM : function( beatsPerMinute ){
+		this.bpm = beatsPerMinute;
 		return this;
+	},
+	toggleGlide : function(){
+		this.doGlide = true;
+		return this;
+
 	}
 
 
