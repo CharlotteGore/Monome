@@ -123,8 +123,17 @@ var Monome = function(){
 			for(var i = 0; i < 16; i++){
 
 				if(self.rows[index % 16][i].on === true){
-					self.voices[i].gain( 1/ notesOn).play(nextTime + 0.1)				
-				}				
+
+					console.log(Math.cos((1 - (1 / notesOn)) * (1 / notesOn) * Math.PI));
+					self.voices[i].gain( Math.cos((1 - (1 / (notesOn ))) * (1 / (notesOn )) * Math.PI) * 0.15 ).play(nextTime + 0.1);	
+					self.rows[index % 16][i].element.removeClass('queued');				
+				}	
+
+				if(self.rows[(index + 1) % 16][i].on === true){
+					self.rows[(index + 1) % 16][i].element.addClass('queued');		
+				}
+
+
 			}
 
 			nextTime = nextTime + bpm;
@@ -212,12 +221,13 @@ var Voice = function( frequency ){
 	this.masterVolume.gain.value = 0;
 	this.envelope.gain.value = 0;
 
-	this.filter.type = 3;
-	this.filter.frequency.value = 3000;
-	this.filter.Q.value = 1;
+	this.filter.type = 0;
+	this.filter.frequency.value = frequency * 2;
+	this.filter.Q.value =0.5 ;
+
 
 	
-	this.osc.type=osc.SINE;
+	this.osc.type=this.osc.SQUARE;
 	this.osc.frequency.value = frequency;
 
 	var updateEnvelope = function(o){
@@ -226,8 +236,9 @@ var Voice = function( frequency ){
 
 	}
 
-	this.rampUp = require('tween').Tweening({ value: 0 }).to({ value: 1 }).using('ease-in').duration(250).tick(updateEnvelope);
-	this.rampDown = require('tween').Tweening({ value: 1 }).to({ value: 0 }).using('ease-out').duration(250).tick(updateEnvelope);
+	this.rampUp = require('tween').Tweening({ value: 0 }).to({ value: 1 }).using('linear').duration(25).tick(updateEnvelope).begin(function(){self.osc.type = self.osc.SINE}).finish(function(){ self.osc.type = self.osc.SINE});
+	this.rampDown = require('tween').Tweening({ value: 1 }).to({ value: 0 }).using('linear').duration(400).tick(updateEnvelope).begin(function(){self.osc.type = self.osc.SINE});
+	this.glide = require('tween').Tweening({ value: -4800 }).to({ value: 0 }).using('ease-out').duration(50).tick(function(o){self.osc.detune.value = o.value;});
 
 	this.rampUpTimeout = -1;
 	this.rampDownTimeout = -1;
@@ -243,7 +254,7 @@ var Voice = function( frequency ){
 Voice.prototype = {
 
 	play : function(startTime){
-		
+
 		clearTimeout(this.rampDownTimeout);
 		this.rampDown.stop();
 
@@ -251,10 +262,19 @@ Voice.prototype = {
 
 		var self = this,
 			start = Math.floor(startTime - ctx.currentTime) * 1000;
+
+		var updateEnvelope = function(o){
+
+			self.envelope.gain.value = o.value;
+
+		}
+
+		this.rampUp.from({value : this.envelope.gain.value }).to({ value: 1 }).using('ease-in').duration(25);
 		
 		this.rampUpTimeout = setTimeout(function(){
 
 			self.rampUp.play();
+			self.glide.play();
 
 		}, start );
 		
@@ -262,7 +282,9 @@ Voice.prototype = {
 
 			self.rampDown.play();
 
-		}, start + 500);
+		}, start + 440);
+
+		
 
 	},
 	gain : function( gain ){
@@ -280,6 +302,9 @@ Voice.prototype = {
 		clearTimeout(this.rampDownTimeout);
 		clearTimeout(this.rampUpTimeout);
 		this.envelope.gain.value = 0;
+
+		this.rampUpTimeout = -1;
+		this.rampDownTimeout = -1;
 
 	}
 
@@ -304,6 +329,7 @@ var NoteButton = function(cubeSize, i, j, onUpdate){
 
 		self.element.toggleClass('on');
 		self.on = !self.on;
+		self.element.removeClass('unqueued').removeClass('queued');
 		onUpdate();
 
 	});
