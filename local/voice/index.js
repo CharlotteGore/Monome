@@ -59,11 +59,6 @@ Voice.prototype = {
 
 		}
 
-		if(this.glide){
-
-			this.glide.stop();
-
-		}
 
 		var updateEnvelope = function(o){
 
@@ -91,7 +86,7 @@ Voice.prototype = {
 		this.rampUpTimeout = setTimeout(function(){
 
 			self.rampUp.play();
-			if(this.glide){
+			if(self.doGlide){
 				self.glide.play();
 			}
 
@@ -101,7 +96,7 @@ Voice.prototype = {
 
 			self.rampDown.play();
 
-		}, start + Math.round((bpm * 1000 * 0.9)));
+		}, start + Math.round((bpm * 1000)));
 
 		return this;
 
