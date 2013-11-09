@@ -23,7 +23,7 @@ $ npm install http-server
 $ http-server . -p 3000
 ```
 
-...Then open (http://localhost:3000)[http://localhost:3000]
+...Then open [http://localhost:3000](http://localhost:3000)
 
 ## Building
 
