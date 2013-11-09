@@ -87,7 +87,7 @@ for(var rule in css){
 var monomeA = require('monome-synth').Monome(ctx, mixerA, bpm, tick).glide().updateCode(function(code){
 
     codeA = code;
-    hashchange.updateHash('#!song=' + codeA + ":" + codeB);
+    hashchange.updateHash('!song=' + codeA + ":" + codeB);
 
 });
 var monomeB = require('monome-synth').Monome(ctx, mixerB, bpm * 4, tick).waveform(ref.SAWTOOTH).updateCode(function(code){
