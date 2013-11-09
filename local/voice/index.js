@@ -1,173 +1,164 @@
 var ctx;
 
-
 var Voice = function( webAudioContext , mixer ){
 
-	var self = this;
+  var self = this;
 
-	ctx = webAudioContext;
+  ctx = webAudioContext;
 
-	//this.frequency = frequency;
+  //this.frequency = frequency;
 
-	this.bpm = 0.5;
+  this.bpm = 0.5;
 
-	// create our notes
-	this.filter = ctx.createBiquadFilter(); // low pass filter for getting rid of errant harmonics.
-	this.masterVolume = ctx.createGain(); // master volume is set based on the number of sounds to be played this step
-	this.envelope = ctx.createGain(); // envelope filter for playing notes
-	this.osc = ctx.createOscillator(); // our oscillator. Probably shouldn't be making lots of these.
+  // create our notes
+  this.filter = ctx.createBiquadFilter(); // low pass filter for getting rid of errant harmonics.
+  this.masterVolume = ctx.createGain(); // master volume is set based on the number of sounds to be played this step
+  this.envelope = ctx.createGain(); // envelope filter for playing notes
+  this.osc = ctx.createOscillator(); // our oscillator. Probably shouldn't be making lots of these.
 
-	// route the web audio notes
-	this.masterVolume.connect(mixer);
-	this.filter.connect(this.masterVolume);
-	this.envelope.connect(this.filter);
-	this.osc.connect(this.envelope);
+  // route the web audio notes
+  this.masterVolume.connect(mixer);
+  this.filter.connect(this.masterVolume);
+  this.envelope.connect(this.filter);
+  this.osc.connect(this.envelope);
 
-	// configure the notes
-	this.masterVolume.gain.value = 0;
-	this.envelope.gain.value = 0;
+  // configure the notes
+  this.masterVolume.gain.value = 0;
+  this.envelope.gain.value = 0;
 
-	this.filter.type = 0;
-	//this.filter.frequency.value = frequency * 2;
-	this.filter.Q.value =0.5 ;
+  this.filter.type = 0;
+  //this.filter.frequency.value = frequency * 2;
+  this.filter.Q.value =0.5 ;
 
 
-	this.rampUpTimeout = -1;
-	this.rampDownTimeout = -1;
-	this.doGlide = false;
+  this.rampUpTimeout = -1;
+  this.rampDownTimeout = -1;
+  this.doGlide = false;
 
-	// start the oscillator
-	this.osc.start(ctx.currentTime);
+  // start the oscillator
+  this.osc.start(ctx.currentTime);
 
-	return this;
-
+  return this;
 
 }
 
 Voice.prototype = {
 
-	play : function(startTime){
+  play : function(startTime){
 
-		var bpm = this.bpm;
+    var bpm = this.bpm;
 
-		clearTimeout(this.rampDownTimeout);
-		clearTimeout(this.rampUpTimeout);
+    clearTimeout(this.rampDownTimeout);
+    clearTimeout(this.rampUpTimeout);
 
-		if(this.rampUp && this.rampDown){
-			this.rampDown.stop();
-			this.rampUp.stop();
+    if(this.rampUp && this.rampDown){
+      this.rampDown.stop();
+      this.rampUp.stop();
 
-		}
+    }
 
+    var updateEnvelope = function(o){
 
-		var updateEnvelope = function(o){
+      self.envelope.gain.value = o.value;
 
-			self.envelope.gain.value = o.value;
+    }
 
-		}
+    var self = this,
+      start = Math.floor(startTime - ctx.currentTime) * 1000;
 
+    var updateEnvelope = function(o){
 
-		var self = this,
-			start = Math.floor(startTime - ctx.currentTime) * 1000;
+      self.envelope.gain.value = o.value;
 
-		var updateEnvelope = function(o){
+    }
+    
+    this.rampUp = require('tween').Tweening({ value: this.envelope.gain.value }).to({ value: 1 }).using('ease-in').duration(  Math.round( (bpm * 1000) / 2) ).tick(updateEnvelope); //.begin(function(){self.osc.type = self.osc.SINE}).finish(function(){ self.osc.type = self.osc.SINE});
+    this.rampDown = require('tween').Tweening({ value: 1 }).to({ value: 0 }).using('ease-out').duration( Math.round( (bpm * 1000 * 2))).tick(updateEnvelope); // .begin(function(){self.osc.type = self.osc.SINE});
+    
+    if(this.doGlide){
+      this.glide = require('tween').Tweening({ value: -600 }).to({ value: 0}).using('linear').duration( Math.round( (bpm * 1000) / 20) ).tick(function(o){self.osc.detune.value = o.value;});
+    }
 
-			self.envelope.gain.value = o.value;
+    this.rampUpTimeout = setTimeout(function(){
 
-		}
-		
-		this.rampUp = require('tween').Tweening({ value: this.envelope.gain.value }).to({ value: 1 }).using('ease-in').duration(  Math.round( (bpm * 1000) / 2) ).tick(updateEnvelope); //.begin(function(){self.osc.type = self.osc.SINE}).finish(function(){ self.osc.type = self.osc.SINE});
-		this.rampDown = require('tween').Tweening({ value: 1 }).to({ value: 0 }).using('ease-out').duration( Math.round( (bpm * 1000 * 2))).tick(updateEnvelope); // .begin(function(){self.osc.type = self.osc.SINE});
-		
-		if(this.doGlide){
-			this.glide = require('tween').Tweening({ value: -600 }).to({ value: 0}).using('linear').duration( Math.round( (bpm * 1000) / 20) ).tick(function(o){self.osc.detune.value = o.value;});
-		}
+      self.rampUp.play();
+      if(self.doGlide){
+        self.glide.play();
+      }
 
-		this.rampUpTimeout = setTimeout(function(){
+    }, start );
 
-			self.rampUp.play();
-			if(self.doGlide){
-				self.glide.play();
-			}
+    this.rampDownTimeout = setTimeout(function(){
 
-		}, start );
+      self.rampDown.play();
 
-		this.rampDownTimeout = setTimeout(function(){
+    }, start + Math.round((bpm * 1000)));
 
-			self.rampDown.play();
+    return this;
 
-		}, start + Math.round((bpm * 1000)));
+  },
+  gain : function( gain ){
 
-		return this;
+    this.masterVolume.gain.value = gain;
 
-	},
-	gain : function( gain ){
+    return this;
 
-		this.masterVolume.gain.value = gain;
+  },
+  stop : function(){
 
-		return this;
+    if(this.rampUp && this.rampDown){
 
-	},
-	stop : function(){
+      this.rampUp.stop();
+      this.rampDown.stop();
+      clearTimeout(this.rampDownTimeout);
+      clearTimeout(this.rampUpTimeout);
 
-		if(this.rampUp && this.rampDown){
+    }
+    this.envelope.gain.value = 0;
 
-			this.rampUp.stop();
-			this.rampDown.stop();
-			clearTimeout(this.rampDownTimeout);
-			clearTimeout(this.rampUpTimeout);
+    this.rampUpTimeout = -1;
+    this.rampDownTimeout = -1;
 
-		}
-		this.envelope.gain.value = 0;
+  },
+  square : function(){
 
-		this.rampUpTimeout = -1;
-		this.rampDownTimeout = -1;
+    this.osc.type = this.osc.SQUARE;
+    return this;
 
-	},
-	square : function(){
-
-		this.osc.type = this.osc.SQUARE;
-		return this;
-
-	},
-	triangle : function(){
-		this.osc.type = this.osc.TRIANGLE;
-		return this;
-	},
-	ramp : function(){
-		this.osc.type = this.osc.SAWTOOTH;		
-		return this;
-	},
-	sine : function(){
-		this.osc.type = this.osc.SINE;
-		return this;
-	},
-	waveform : function(waveform){
-		this.osc.type = waveform;
-		return this;
-	},
-	frequency : function( frequency ){
-		this.osc.frequency.value = frequency;
-		this.filter.frequency.value = frequency * 2;
-		return this;
-	},
-	setBPM : function( beatsPerMinute ){
-		this.bpm = beatsPerMinute;
-		return this;
-	},
-	toggleGlide : function(){
-		this.doGlide = true;
-		return this;
-
-	}
-
-
+  },
+  triangle : function(){
+    this.osc.type = this.osc.TRIANGLE;
+    return this;
+  },
+  ramp : function(){
+    this.osc.type = this.osc.SAWTOOTH;    
+    return this;
+  },
+  sine : function(){
+    this.osc.type = this.osc.SINE;
+    return this;
+  },
+  waveform : function(waveform){
+    this.osc.type = waveform;
+    return this;
+  },
+  frequency : function( frequency ){
+    this.osc.frequency.value = frequency;
+    this.filter.frequency.value = frequency * 2;
+    return this;
+  },
+  setBPM : function( beatsPerMinute ){
+    this.bpm = beatsPerMinute;
+    return this;
+  },
+  toggleGlide : function(){
+    this.doGlide = true;
+    return this;
+  }
 }
 
 module.exports.Voice = function( frequency, waveform ){
-
-	return new Voice( frequency, waveform );
-
+  return new Voice( frequency, waveform );
 }
 
 module.exports.SINE = 0;

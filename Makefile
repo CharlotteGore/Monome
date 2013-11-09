@@ -1,9 +1,10 @@
 
 build: components index.js
-	@component build --dev
+	@component build
+	@flatinator -n monome --app monome
 
 components: component.json
-	@component install --dev
+	@component install
 
 clean:
 	rm -fr build components template.js
