@@ -58,36 +58,7 @@
  * @api private
  */
   require.resolve = function(path) {
-    if (path.charAt(0) === "/") path = path.slice(1);
-    var paths = [ path, path + ".js", path + ".json", path + "/index.js", path + "/index.json" ];
-    for (var i = 0; i < paths.length; i++) {
-      var path = paths[i];
-      if (require.modules.hasOwnProperty(path)) return path;
-      if (require.aliases.hasOwnProperty(path)) return require.aliases[path];
-    }
-  };
-
-  /**
- * Normalize `path` relative to the current path.
- *
- * @param {String} curr
- * @param {String} path
- * @return {String}
- * @api private
- */
-  require.normalize = function(curr, path) {
-    var segs = [];
-    if ("." != path.charAt(0)) return path;
-    curr = curr.split("/");
-    path = path.split("/");
-    for (var i = 0; i < path.length; ++i) {
-      if (".." == path[i]) {
-        curr.pop();
-      } else if ("." != path[i] && "" != path[i]) {
-        segs.push(path[i]);
-      }
-    }
-    return curr.concat(segs).join("/");
+    if (require.modules.hasOwnProperty(path)) return path;
   };
 
   /**
